@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% set is_edit = category is defined %}
+
+{% block title %}
+{{ '编辑' if is_edit else '添加' }}分类 - 美团外卖
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4>
+                        <i class="fas fa-{{ 'edit' if is_edit else 'plus' }} me-2"></i>
+                        {{ '编辑' if is_edit else '添加' }}菜品分类
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">分类名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ category.name if is_edit else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="icon" class="form-label">FontAwesome 图标</label>
+                            <input type="text" class="form-control" id="icon" name="icon" 
+                                   value="{{ category.icon if is_edit else '' }}" 
+                                   placeholder="例如: fas fa-utensils">
+                            <small class="form-text text-muted">
+                                请输入完整的 FontAwesome 图标类名, 可在 <a href="https://fontawesome.com/icons" target="_blank">官网</a> 查找。
+                            </small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sort_order" class="form-label">排序值</label>
+                            <input type="number" class="form-control" id="sort_order" name="sort_order" 
+                                   value="{{ category.sort_order if is_edit else '0' }}">
+                            <small class="form-text text-muted">值越小，排序越靠前。</small>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('category.admin_categories') }}" class="btn btn-secondary me-2">取消</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

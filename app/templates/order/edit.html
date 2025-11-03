@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>编辑订单</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">订单信息</h5>
+            <p><strong>菜品：</strong>{{ order.dish.name }}</p>
+            <p><strong>单价：</strong>￥{{ order.dish.price }}</p>
+            <p><strong>状态：</strong>{{ order.status }}</p>
+            <p><strong>下单时间：</strong>{{ order.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+    </div>
+    
+    <form method="POST" class="mt-3">
+        <div class="form-group mb-3">
+            <label for="quantity">数量</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" 
+                   value="{{ order.quantity }}" min="1" required>
+        </div>
+        
+        <div class="alert alert-info">
+            <strong>总价：</strong>￥<span id="total-price">{{ order.dish.price * order.quantity }}</span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">保存修改</button>
+        <a href="{{ url_for('order.list_orders') }}" class="btn btn-secondary">返回</a>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('quantity');
+    const totalPriceSpan = document.getElementById('total-price');
+    const price = parseFloat('{{ order.dish.price }}');
+    
+    quantityInput.addEventListener('input', function() {
+        const quantity = parseInt(this.value) || 0;
+        totalPriceSpan.textContent = (quantity * price).toFixed(2);
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}菜品管理 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="container">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-utensils me-2"></i>菜品管理</h2>
+            <a href="{{ url_for('dish.add_dish') }}" class="btn btn-warning">
+                <i class="fas fa-plus me-2"></i>添加新菜品
+            </a>
+        </div>
+
+        <div class="filter-section mb-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="keyword" 
+                           placeholder="搜索菜品名称..." value="{{ request.args.get('keyword', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="restaurant_id">
+                        <option value="">全部餐厅</option>
+                        {% for restaurant in restaurants %}
+                        <option value="{{ restaurant.id }}" 
+                                {% if request.args.get('restaurant_id', type=int) == restaurant.id %}selected{% endif %}>
+                            {{ restaurant.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" name="available">
+                        <option value="">全部状态</option>
+                        <option value="1" {% if request.args.get('available') == '1' %}selected{% endif %}>在售</option>
+                        <option value="0" {% if request.args.get('available') == '0' %}selected{% endif %}>下架</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i>搜索
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if dishes %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>图片</th>
+                        <th>菜品名称</th>
+                        <th>所属餐厅</th>
+                        <th>分类</th>
+                        <th>价格</th>
+                        <th>销量</th>
+                        <th>评分</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dish in dishes %}
+                    <tr>
+                        <td>{{ dish.id }}</td>
+                        <td>
+                            <img src="{{ dish.image or '/static/images/dishes/default.jpg' }}" 
+                                 alt="{{ dish.name }}" class="dish-image-small">
+                        </td>
+                        <td>
+                            <strong>{{ dish.name }}</strong>
+                            {% if dish.is_recommended %}
+                                <span class="badge bg-danger ms-1">推荐</span>
+                            {% endif %}
+                            {% if dish.is_spicy %}
+                                <span class="badge bg-warning ms-1">🌶️辣</span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">{{ dish.description[:30] }}...</small>
+                        </td>
+                        <td>{{ dish.restaurant.name }}</td>
+                        <td>{{ dish.category.name if dish.category else '-' }}</td>
+                        <td>
+                            {% if dish.original_price %}
+                                <del class="text-muted">¥{{ dish.original_price }}</del>
+                            {% endif %}
+                            <strong class="text-danger">¥{{ dish.price }}</strong>
+                        </td>
+                        <td>{{ dish.sales_count }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-star"></i> {{ dish.rating }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if dish.available %}
+                                <span class="badge bg-success">在售</span>
+                            {% else %}
+                                <span class="badge bg-secondary">下架</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('dish.edit_dish', dish_id=dish.id) }}" 
+                                   class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-warning" 
+                                        onclick="toggleAvailable({{ dish.id }}, {{ dish.available|lower }})" title="上/下架">
+                                    <i class="fas fa-power-off"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        onclick="deleteDish({{ dish.id }})" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if pagination %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.prev_num }}&{{ request.query_string.decode() }}">上一页</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_num }}&{{ request.query_string.decode() }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.next_num }}&{{ request.query_string.decode() }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>暂无菜品数据
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.page-header {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.dish-image-small {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+
+<script>
+function toggleAvailable(dishId, currentStatus) {
+    const newStatus = !currentStatus;
+    const statusText = newStatus ? '上架' : '下架';
+    
+    if (confirm(`确定要${statusText}这个菜品吗？`)) {
+        fetch(`/dish/${dishId}/toggle_available`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ available: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('网络错误，请重试');
+        });
+    }
+}
+
+function deleteDish(dishId) {
+    if (confirm('确定要删除这个菜品吗？\n\n注意：如果菜品在购物车中或有历史订单，删除将会失败。\n建议优先使用"下架"功能。')) {
+        window.location.href = `/dish/delete/${dishId}`;
+    }
+}
+
+function forceDeleteDish(dishId) {
+    if (confirm('⚠️ 强制删除警告 ⚠️\n\n这将删除菜品及其在购物车中的记录！\n历史订单记录将保留。\n\n确定要强制删除吗？此操作不可恢复！')) {
+        // 创建表单并提交
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/dish/delete/${dishId}/force`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %} 

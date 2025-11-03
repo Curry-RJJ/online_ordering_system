@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}餐厅分类管理 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="container">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-tags me-2"></i>餐厅分类管理</h2>
+            <a href="{{ url_for('restaurant_category.add_category') }}" class="btn btn-warning">
+                <i class="fas fa-plus me-2"></i>添加新分类
+            </a>
+        </div>
+
+        {% if categories %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>排序</th>
+                        <th>图标</th>
+                        <th>分类名称</th>
+                        <th>餐厅数量</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>{{ category.sort_order }}</td>
+                        <td>
+                            {% if category.icon %}
+                                <i class="{{ category.icon }} fa-2x text-warning"></i>
+                            {% else %}
+                                <i class="fas fa-utensils fa-2x text-muted"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ category.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ category_stats.get(category.id, 0) }} 家餐厅</span>
+                        </td>
+                        <td>{{ category.created_at.strftime('%Y-%m-%d %H:%M') if category.created_at else '-' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('restaurant_category.edit_category', category_id=category.id) }}" 
+                                   class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('restaurant_category.delete_category', category_id=category.id) }}" 
+                                   class="btn btn-outline-danger" 
+                                   onclick="return confirm('确定要删除这个分类吗？')" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>暂无餐厅分类数据
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.page-header {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %} 

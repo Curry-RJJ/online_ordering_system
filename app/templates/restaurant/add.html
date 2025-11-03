@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}添加餐厅 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0 text-dark">
+                        <i class="fas fa-plus-circle me-2"></i>添加新餐厅
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('restaurant.add_restaurant') }}" enctype="multipart/form-data">
+                        <!-- 基本信息 -->
+                        <h5 class="mb-3">基本信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">餐厅名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">联系电话</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">餐厅描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="介绍一下餐厅的特色..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">餐厅地址 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="address" name="address" required>
+                        </div>
+
+                        <!-- 营业信息 -->
+                        <h5 class="mb-3 mt-4">营业信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="business_hours" class="form-label">营业时间</label>
+                                <input type="text" class="form-control" id="business_hours" name="business_hours" 
+                                       placeholder="例如：09:00-22:00" value="09:00-22:00">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cuisine_type" class="form-label">菜系类型</label>
+                                <select class="form-select" id="cuisine_type" name="cuisine_type">
+                                    <option value="中餐">中餐</option>
+                                    <option value="西餐">西餐</option>
+                                    <option value="日料">日料</option>
+                                    <option value="韩餐">韩餐</option>
+                                    <option value="快餐">快餐</option>
+                                    <option value="饮品">饮品</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 配送信息 -->
+                        <h5 class="mb-3 mt-4">配送信息</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="min_order" class="form-label">起送金额（元）</label>
+                                <input type="number" class="form-control" id="min_order" name="min_order" 
+                                       value="20" min="0" step="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="delivery_fee" class="form-label">配送费（元）</label>
+                                <input type="number" class="form-control" id="delivery_fee" name="delivery_fee" 
+                                       value="5" min="0" step="0.5">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="delivery_time" class="form-label">预计送达时间（分钟）</label>
+                                <input type="number" class="form-control" id="delivery_time" name="delivery_time" 
+                                       value="30" min="10" step="5">
+                            </div>
+                        </div>
+
+                        <!-- 评分信息 -->
+                        <h5 class="mb-3 mt-4">评分信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="rating" class="form-label">初始评分</label>
+                                <input type="number" class="form-control" id="rating" name="rating" 
+                                       value="4.5" min="0" max="5" step="0.1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="review_count" class="form-label">初始评价数</label>
+                                <input type="number" class="form-control" id="review_count" name="review_count" 
+                                       value="0" min="0">
+                            </div>
+                        </div>
+
+                        <!-- 图片上传 -->
+                        <h5 class="mb-3 mt-4">餐厅图片</h5>
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">餐厅Logo</label>
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                            <small class="form-text text-muted">建议上传正方形图片，支持 JPG、PNG 格式</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="banner" class="form-label">餐厅横幅</label>
+                            <input type="file" class="form-control" id="banner" name="banner" accept="image/*">
+                            <small class="form-text text-muted">建议尺寸 1200x400，支持 JPG、PNG 格式</small>
+                        </div>
+
+                        <!-- 状态设置 -->
+                        <h5 class="mb-3 mt-4">状态设置</h5>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_open" name="is_open" checked>
+                            <label class="form-check-label" for="is_open">
+                                营业中
+                            </label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                            <label class="form-check-label" for="is_featured">
+                                推荐餐厅
+                            </label>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>取消
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>保存餐厅
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-label {
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #ffd900;
+    box-shadow: 0 0 0 0.2rem rgba(255, 217, 0, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #ffd900;
+    border-color: #ffd900;
+}
+
+h5 {
+    color: #333;
+    border-bottom: 2px solid #ffd900;
+    padding-bottom: 8px;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}申请成为管理员{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-warning bg-gradient text-dark fw-bold">
+        <i class="fas fa-user-shield me-2"></i>申请成为管理员
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-4">
+          请填写申请理由，管理员将会尽快审核。通过后您的账号将具备管理后台权限。
+        </p>
+        <form method="post">
+          <div class="mb-3">
+            <label for="reason" class="form-label">申请理由</label>
+            <textarea class="form-control" id="reason" name="reason" rows="5" maxlength="300" placeholder="请简要说明您申请管理员的原因，例如：\n・我希望帮助平台管理商家和菜品\n・我具备相关运营经验\n・我能确保及时响应用户需求" required></textarea>
+            <div class="form-text text-end"><span id="char-count">0</span>/300</div>
+          </div>
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-warning btn-lg">提交申请</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 字数统计
+  const reasonInput = document.getElementById('reason');
+  const charCount = document.getElementById('char-count');
+  if (reasonInput && charCount) {
+    reasonInput.addEventListener('input', () => {
+      charCount.textContent = reasonInput.value.length;
+    });
+  }
+</script>
+{% endblock %}

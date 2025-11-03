@@ -1,0 +1,858 @@
+/* 美团风格订餐系统 - 现代化主样式文件 */
+
+:root {
+    /* 美团品牌色彩 */
+    --meituan-yellow: #ffd900;
+    --meituan-orange: #ff8800;
+    --meituan-red: #ff4757;
+    --meituan-green: #06c755;
+    --meituan-blue: #3742fa;
+    
+    /* 渐变色 */
+    --gradient-primary: linear-gradient(135deg, #ffd900 0%, #ff8800 100%);
+    --gradient-secondary: linear-gradient(135deg, #ff8800 0%, #ff4757 100%);
+    --gradient-success: linear-gradient(135deg, #06c755 0%, #2ed573 100%);
+    --gradient-info: linear-gradient(135deg, #3742fa 0%, #5352ed 100%);
+    
+    /* 中性色 */
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    
+    /* 文字颜色 */
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-600);
+    --text-muted: var(--gray-500);
+    --text-light: var(--gray-400);
+    
+    /* 边框和阴影 */
+    --border-color: var(--gray-200);
+    --border-radius-sm: 6px;
+    --border-radius: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    
+    /* 阴影系统 */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    
+    /* 动画时长 */
+    --duration-fast: 150ms;
+    --duration-normal: 300ms;
+    --duration-slow: 500ms;
+    
+    /* 缓动函数 */
+    --ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0.0, 1, 1);
+    --ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* 全局样式重置 */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: var(--gray-50);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 4px;
+    transition: background var(--duration-normal) var(--ease-out);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
+}
+
+/* 美团风格按钮系统 */
+.btn-meituan {
+    background: var(--gradient-primary);
+    border: none;
+    color: var(--text-primary);
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 12px 24px;
+    font-size: 14px;
+    transition: all var(--duration-normal) var(--ease-out);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-meituan:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+}
+
+.btn-meituan:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-meituan-secondary {
+    background: var(--white);
+    border: 2px solid var(--meituan-yellow);
+    color: var(--meituan-orange);
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 10px 22px;
+    transition: all var(--duration-normal) var(--ease-out);
+}
+
+.btn-meituan-secondary:hover {
+    background: var(--meituan-yellow);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-danger-modern {
+    background: var(--gradient-secondary);
+    border: none;
+    color: var(--white);
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 12px 24px;
+    transition: all var(--duration-normal) var(--ease-out);
+}
+
+.btn-danger-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+}
+
+.btn-success-modern {
+    background: var(--gradient-success);
+    border: none;
+    color: var(--white);
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 12px 24px;
+    transition: all var(--duration-normal) var(--ease-out);
+}
+
+.btn-success-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+}
+
+/* 现代化卡片系统 */
+.card-modern {
+    background: var(--white);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--duration-normal) var(--ease-out);
+    overflow: hidden;
+    position: relative;
+}
+
+.card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.card-modern:hover::before {
+    opacity: 1;
+}
+
+/* 餐厅卡片升级 */
+.restaurant-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--duration-normal) var(--ease-out);
+    margin-bottom: 24px;
+    cursor: pointer;
+    position: relative;
+}
+
+.restaurant-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+}
+
+.restaurant-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 0%, rgba(255, 217, 0, 0.05) 100%);
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.restaurant-card:hover::after {
+    opacity: 1;
+}
+
+.restaurant-image {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--border-radius);
+}
+
+.restaurant-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.restaurant-card:hover .restaurant-image img {
+    transform: scale(1.05);
+}
+
+.restaurant-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 3px solid var(--white);
+}
+
+.restaurant-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 菜品卡片升级 */
+.dish-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--duration-normal) var(--ease-out);
+    position: relative;
+    height: 100%;
+}
+
+.dish-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.dish-card.recommended {
+    border: 2px solid var(--meituan-yellow);
+    position: relative;
+}
+
+.dish-card.recommended::before {
+    content: '推荐';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--gradient-secondary);
+    color: var(--white);
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 2;
+    box-shadow: var(--shadow);
+}
+
+.dish-image {
+    position: relative;
+    overflow: hidden;
+    height: 200px;
+}
+
+.dish-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.dish-card:hover .dish-image img {
+    transform: scale(1.1);
+}
+
+.spicy-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: var(--meituan-red);
+    color: var(--white);
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 2;
+    box-shadow: var(--shadow);
+}
+
+/* 价格样式升级 */
+.price {
+    color: var(--meituan-red);
+    font-weight: 700;
+    font-size: 20px;
+    font-family: 'SF Pro Display', -apple-system, sans-serif;
+}
+
+.price-large {
+    font-size: 24px;
+}
+
+.original-price {
+    text-decoration: line-through;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+/* 评分系统 */
+.rating {
+    color: var(--meituan-yellow);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rating-stars {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.rating-number {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-left: 4px;
+}
+
+/* 标签系统 */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: var(--border-radius-xl);
+    font-size: 12px;
+    font-weight: 600;
+    gap: 4px;
+}
+
+.tag-recommended {
+    background: var(--gradient-secondary);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.tag-spicy {
+    background: var(--meituan-red);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.tag-new {
+    background: var(--gradient-success);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.tag-discount {
+    background: var(--gradient-info);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 搜索框升级 */
+.search-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-box {
+    width: 100%;
+    padding: 16px 24px 16px 48px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-xl);
+    background: var(--white);
+    font-size: 16px;
+    transition: all var(--duration-normal) var(--ease-out);
+    box-shadow: var(--shadow-sm);
+}
+
+.search-box:focus {
+    outline: none;
+    border-color: var(--meituan-yellow);
+    box-shadow: 0 0 0 4px rgba(255, 217, 0, 0.1), var(--shadow);
+    transform: translateY(-2px);
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 18px;
+    pointer-events: none;
+}
+
+/* 状态徽章 */
+.status-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-xl);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--white);
+    z-index: 2;
+    box-shadow: var(--shadow);
+}
+
+.status-badge.open {
+    background: var(--gradient-success);
+}
+
+.status-badge.busy {
+    background: var(--gradient-secondary);
+}
+
+.status-badge.closed {
+    background: var(--gray-500);
+}
+
+/* 购物车悬浮按钮升级 */
+.floating-cart {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 1000;
+}
+
+.cart-button {
+    width: 64px;
+    height: 64px;
+    background: var(--gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    text-decoration: none;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--duration-normal) var(--ease-out);
+    font-size: 20px;
+    position: relative;
+}
+
+.cart-button:hover {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-primary);
+}
+
+.cart-button:active {
+    transform: scale(1.05);
+}
+
+.cart-button::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    opacity: 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.3;
+        transform: scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.4);
+    }
+}
+
+/* 表单控件美化 */
+.form-control-modern {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 12px 16px;
+    font-size: 14px;
+    transition: all var(--duration-normal) var(--ease-out);
+    background: var(--white);
+}
+
+.form-control-modern:focus {
+    outline: none;
+    border-color: var(--meituan-yellow);
+    box-shadow: 0 0 0 4px rgba(255, 217, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-label-modern {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+/* 表格美化 */
+.table-modern {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.table-modern thead {
+    background: var(--gray-50);
+}
+
+.table-modern th {
+    font-weight: 600;
+    color: var(--text-primary);
+    border: none;
+    padding: 16px;
+}
+
+.table-modern td {
+    border: none;
+    padding: 16px;
+    vertical-align: middle;
+}
+
+.table-modern tbody tr {
+    transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.table-modern tbody tr:hover {
+    background: var(--gray-50);
+}
+
+/* 模态框美化 */
+.modal-content-modern {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header-modern {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+/* 警告框美化 */
+.alert-modern {
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 16px 20px;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-success-modern {
+    background: linear-gradient(135deg, rgba(6, 199, 85, 0.1) 0%, rgba(46, 213, 115, 0.1) 100%);
+    color: var(--meituan-green);
+    border-left: 4px solid var(--meituan-green);
+}
+
+.alert-danger-modern {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.1) 0%, rgba(255, 136, 0, 0.1) 100%);
+    color: var(--meituan-red);
+    border-left: 4px solid var(--meituan-red);
+}
+
+.alert-info-modern {
+    background: linear-gradient(135deg, rgba(55, 66, 250, 0.1) 0%, rgba(83, 82, 237, 0.1) 100%);
+    color: var(--meituan-blue);
+    border-left: 4px solid var(--meituan-blue);
+}
+
+/* 加载动画 */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gray-200);
+    border-radius: 50%;
+    border-top-color: var(--meituan-yellow);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .container {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --border-radius-lg: 12px;
+        --border-radius-xl: 16px;
+    }
+    
+    .restaurant-card {
+        margin-bottom: 16px;
+    }
+    
+    .dish-card {
+        margin-bottom: 16px;
+    }
+    
+    .floating-cart {
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .cart-button {
+        width: 56px;
+        height: 56px;
+        font-size: 18px;
+    }
+    
+    .search-box {
+        padding: 14px 20px 14px 44px;
+        font-size: 16px;
+    }
+    
+    .btn-meituan {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dish-image {
+        height: 160px;
+    }
+    
+    .price {
+        font-size: 18px;
+    }
+    
+    .price-large {
+        font-size: 20px;
+    }
+}
+
+/* 动画效果库 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.fade-in {
+    animation: fadeIn var(--duration-slow) var(--ease-out);
+}
+
+.slide-in-right {
+    animation: slideInRight var(--duration-slow) var(--ease-out);
+}
+
+.slide-in-left {
+    animation: slideInLeft var(--duration-slow) var(--ease-out);
+}
+
+.scale-in {
+    animation: scaleIn var(--duration-normal) var(--ease-out);
+}
+
+/* Toast消息系统 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+}
+
+.toast-message {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--meituan-green);
+    animation: slideInRight var(--duration-normal) var(--ease-out);
+    position: relative;
+    overflow: hidden;
+}
+
+.toast-message::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--meituan-green);
+    animation: progress 3s linear;
+}
+
+@keyframes progress {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+.toast-success {
+    border-left-color: var(--meituan-green);
+}
+
+.toast-success::before {
+    background: var(--meituan-green);
+}
+
+.toast-error {
+    border-left-color: var(--meituan-red);
+}
+
+.toast-error::before {
+    background: var(--meituan-red);
+}
+
+.toast-info {
+    border-left-color: var(--meituan-blue);
+}
+
+.toast-info::before {
+    background: var(--meituan-blue);
+}
+
+/* 工具类 */
+.text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+.bg-gradient-primary {
+    background: var(--gradient-primary);
+}
+
+.bg-gradient-secondary {
+    background: var(--gradient-secondary);
+}
+
+.bg-gradient-success {
+    background: var(--gradient-success);
+}
+
+.shadow-modern {
+    box-shadow: var(--shadow-lg);
+}
+
+.rounded-modern {
+    border-radius: var(--border-radius-lg);
+}
+
+.rounded-xl-modern {
+    border-radius: var(--border-radius-xl);
+} 

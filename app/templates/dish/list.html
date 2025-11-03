@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>菜品列表</h2>
+{% if current_user.is_authenticated and current_user.role == 'user' %}
+    <a href="{{ url_for('auth.apply_admin') }}" class="btn btn-outline-secondary mb-3">申请成为管理员</a>
+{% elif current_user.is_authenticated and current_user.role == 'pending' %}
+    <div class="alert alert-info mb-3">您已提交管理员申请，正在审核中…</div>
+{% endif %}
+
+{% if current_user.is_authenticated and current_user.role == 'admin' %}
+    <a href="{{ url_for('dish.add_dish') }}" class="btn btn-success mb-2">添加菜品</a>
+{% endif %}
+<table class="table">
+    <thead>
+        <tr><th>名称</th><th>价格</th><th>描述</th><th>状态</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+        {% for dish in dishes %}
+        <tr>
+            <td>{{ dish.name }}</td>
+            <td>{{ dish.price }}</td>
+            <td>{{ dish.description }}</td>
+            <td>{{ '可用' if dish.available else '停售' }}</td>
+            <td>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('order.create_order', dish_id=dish.id) }}" class="btn btn-sm btn-primary">下单</a>
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('dish.edit_dish', dish_id=dish.id) }}" class="btn btn-sm btn-warning">编辑</a>
+                        <a href="{{ url_for('dish.delete_dish', dish_id=dish.id) }}" class="btn btn-sm btn-danger">删除</a>
+                    {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

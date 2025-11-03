@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>订单详情</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>订单 #{{ order.id }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>基本信息</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>订单号：</strong></td>
+                            <td>{{ order.id }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>下单用户：</strong></td>
+                            <td>{{ order.user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>下单时间：</strong></td>
+                            <td>{{ order.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>订单状态：</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if order.status == '未处理' %}bg-warning
+                                    {% elif order.status == '准备中' %}bg-info
+                                    {% elif order.status == '已完成' %}bg-success
+                                    {% elif order.status == '已取消' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>菜品信息</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>菜品名称：</strong></td>
+                            <td>{{ order.dish.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>单价：</strong></td>
+                            <td>￥{{ order.dish.price }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>数量：</strong></td>
+                            <td>{{ order.quantity }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>总价：</strong></td>
+                            <td><strong>￥{{ (order.dish.price * order.quantity)|round(2) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            {% if order.dish.description %}
+            <div class="mt-3">
+                <h6>菜品描述</h6>
+                <p class="text-muted">{{ order.dish.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{{ url_for('order.list_orders') }}" class="btn btn-secondary">返回订单列表</a>
+        
+        {% if order.user_id == current_user.id %}
+            {% if order.status in ['未处理', '准备中'] %}
+                <a href="{{ url_for('order.edit_order', order_id=order.id) }}" class="btn btn-warning">编辑订单</a>
+                <a href="{{ url_for('order.cancel_order', order_id=order.id) }}" 
+                   class="btn btn-danger" 
+                   onclick="return confirm('确认取消此订单？')">取消订单</a>
+            {% endif %}
+            
+            {% if order.status == '未处理' %}
+                <a href="{{ url_for('order.delete_order', order_id=order.id) }}" 
+                   class="btn btn-outline-danger" 
+                   onclick="return confirm('确认删除此订单？此操作不可恢复！')">删除订单</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

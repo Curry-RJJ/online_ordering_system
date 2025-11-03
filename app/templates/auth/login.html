@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0 text-dark">用户登录</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" name="username" required autofocus>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">登录</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>还没有账号？<a href="{{ url_for('auth.register') }}">立即注册</a></p>
+                    </div>
+                    <hr>
+                    <div class="alert alert-info">
+                        <h6>测试账号：</h6>
+                        <p class="mb-1">管理员：admin / admin123</p>
+                        <p class="mb-0">普通用户：testuser / 123456</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

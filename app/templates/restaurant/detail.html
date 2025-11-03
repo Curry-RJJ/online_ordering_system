@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+
+{% block title %}{{ restaurant.name }} - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="restaurant-detail-container">
+    <!-- 餐厅头部信息 -->
+    <div class="restaurant-banner">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="restaurant-info-card">
+                        <div class="restaurant-logo">
+                            <img src="{{ restaurant.logo or '/static/images/default_restaurant.jpg' }}" 
+                                 alt="{{ restaurant.name }}">
+                        </div>
+                        <div class="restaurant-details">
+                            <h1 class="restaurant-name">{{ restaurant.name }}</h1>
+                            <p class="restaurant-desc">{{ restaurant.description }}</p>
+                            <div class="restaurant-meta">
+                                <div class="rating-info">
+                                    <span class="rating-score">{{ restaurant.rating }}</span>
+                                    <div class="stars">
+                                        {% for i in range(5) %}
+                                            {% if i < restaurant.rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-muted"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <span class="review-count">({{ restaurant.review_count }}条评价)</span>
+                                </div>
+                                <div class="delivery-info">
+                                    {% if restaurant.delivery_fee == 0 %}
+                                        <span class="text-success">免配送费</span>
+                                    {% else %}
+                                        <span>配送费 ¥{{ restaurant.delivery_fee }}</span>
+                                    {% endif %}
+                                    <span class="mx-2">|</span>
+                                    <span>起送 ¥{{ restaurant.min_order }}</span>
+                                </div>
+                                <div class="business-info">
+                                    <i class="fas fa-clock me-1"></i>{{ restaurant.business_hours }}
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ restaurant.address }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 菜品内容 -->
+    <div class="menu-content">
+        <div class="container">
+            <div class="row">
+                <!-- 左侧分类导航 -->
+                <div class="col-lg-3">
+                    <div class="category-sidebar">
+                        <h5>菜品分类</h5>
+                        <div class="category-list">
+                            {% if recommended_dishes %}
+                            <a href="#recommended" class="category-link active" data-category="recommended">
+                                <i class="fas fa-star me-2"></i>推荐菜品
+                            </a>
+                            {% endif %}
+                            {% for category in categories %}
+                            <a href="#category-{{ category.id }}" class="category-link" data-category="{{ category.id }}">
+                                <span class="category-icon">
+                                    {% if category.icon and category.icon.startswith('fas') %}
+                                        <i class="{{ category.icon }}"></i>
+                                    {% elif category.icon %}
+                                        {{ category.icon }}
+                                    {% else %}
+                                        <i class="fas fa-utensils"></i>
+                                    {% endif %}
+                                </span>
+                                {{ category.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧菜品列表 -->
+                <div class="col-lg-9">
+                    <!-- 推荐菜品 -->
+                    {% if recommended_dishes %}
+                    <div class="menu-section" id="recommended">
+                        <h4 class="section-title">
+                            <i class="fas fa-star text-warning me-2"></i>推荐菜品
+                        </h4>
+                        <div class="dishes-grid">
+                            {% for dish in recommended_dishes %}
+                            <div class="dish-card recommended">
+                                <div class="dish-image">
+                                    <img src="{{ dish.image or '/static/images/dishes/default.jpg' }}" 
+                                         alt="{{ dish.name }}">
+                                    {% if dish.is_spicy %}
+                                    <span class="spicy-badge">🌶️</span>
+                                    {% endif %}
+                                </div>
+                                <div class="dish-info">
+                                    <h6 class="dish-name">{{ dish.name }}</h6>
+                                    <p class="dish-desc">{{ dish.description }}</p>
+                                    <div class="dish-stats">
+                                        <span class="sales">月售{{ dish.sales_count }}</span>
+                                        <span class="rating">
+                                            <i class="fas fa-star text-warning"></i>{{ dish.rating }}
+                                        </span>
+                                    </div>
+                                    <div class="dish-footer">
+                                        <div class="price-info">
+                                            {% if dish.original_price %}
+                                                <span class="original-price">¥{{ dish.original_price }}</span>
+                                            {% endif %}
+                                            <span class="current-price">¥{{ dish.price }}</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-warning add-to-cart" 
+                                                data-dish-id="{{ dish.id }}">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- 分类菜品 -->
+                    {% for category_name, dishes in dishes_by_category.items() %}
+                    {% if dishes %}
+                    <div class="menu-section" id="category-{{ dishes[0].category_id }}">
+                        <h4 class="section-title">{{ category_name }}</h4>
+                        <div class="dishes-list">
+                            {% for dish in dishes %}
+                            <div class="dish-item">
+                                <div class="dish-image">
+                                    <img src="{{ dish.image or '/static/images/dishes/default.jpg' }}" 
+                                         alt="{{ dish.name }}">
+                                    {% if dish.is_spicy %}
+                                    <span class="spicy-badge">🌶️</span>
+                                    {% endif %}
+                                </div>
+                                <div class="dish-info">
+                                    <h6 class="dish-name">
+                                        {{ dish.name }}
+                                        {% if dish.is_recommended %}
+                                        <span class="recommended-tag">推荐</span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="dish-desc">{{ dish.description }}</p>
+                                    <div class="dish-stats">
+                                        <span class="sales">月售{{ dish.sales_count }}</span>
+                                        <span class="rating">
+                                            <i class="fas fa-star text-warning"></i>{{ dish.rating }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="dish-actions">
+                                    <div class="price-info">
+                                        {% if dish.original_price %}
+                                            <span class="original-price">¥{{ dish.original_price }}</span>
+                                        {% endif %}
+                                        <span class="current-price">¥{{ dish.price }}</span>
+                                    </div>
+                                    <button class="btn btn-warning add-to-cart" 
+                                            data-dish-id="{{ dish.id }}">
+                                        <i class="fas fa-plus me-1"></i>加入购物车
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 购物车悬浮按钮 -->
+<div class="floating-cart" id="floating-cart" style="display: none;">
+    <a href="{{ url_for('cart.view_cart') }}" class="cart-button">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-count" id="floating-cart-count">0</span>
+    </a>
+</div>
+
+<style>
+.restaurant-detail-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.restaurant-banner {
+    background: linear-gradient(135deg, #ffd900, #ffb800);
+    padding: 30px 0;
+}
+
+.restaurant-info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 20px;
+}
+
+.restaurant-logo {
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+}
+
+.restaurant-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.restaurant-details {
+    flex: 1;
+}
+
+.restaurant-name {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.restaurant-desc {
+    font-size: 16px;
+    color: #666;
+    margin: 0 0 20px 0;
+}
+
+.restaurant-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rating-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rating-score {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffd900;
+}
+
+.stars {
+    font-size: 16px;
+}
+
+.review-count {
+    color: #666;
+}
+
+.delivery-info, .business-info {
+    color: #666;
+    font-size: 14px;
+}
+
+.menu-content {
+    padding: 30px 0;
+}
+
+.category-sidebar {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 20px;
+}
+
+.category-sidebar h5 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.category-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.category-link:hover,
+.category-link.active {
+    background-color: #fff8e1;
+    color: #ffd900;
+    text-decoration: none;
+}
+
+.category-icon {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.menu-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section-title {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: bold;
+}
+
+.dishes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.dish-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.dish-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.dish-card.recommended {
+    border-color: #ffd900;
+}
+
+.dishes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.dish-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.dish-item:hover {
+    border-color: #ffd900;
+    background-color: #fff8e1;
+}
+
+.dish-image {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.dish-card .dish-image {
+    width: 100%;
+    height: 180px;
+}
+
+.dish-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.spicy-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.dish-info {
+    flex: 1;
+}
+
+.dish-card .dish-info {
+    padding: 15px;
+}
+
+.dish-name {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.recommended-tag {
+    background: #ff6b35;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.dish-desc {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 10px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dish-card .dish-desc {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.dish-stats {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #999;
+}
+
+.dish-footer,
+.dish-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.price-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.original-price {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 14px;
+}
+
+.current-price {
+    color: #ff6b35;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.add-to-cart {
+    border: none;
+    font-weight: 500;
+}
+
+.floating-cart {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+}
+
+.cart-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: #ffd900;
+    border-radius: 50%;
+    color: #333;
+    text-decoration: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+    position: relative;
+}
+
+.cart-button:hover {
+    background: #ffb800;
+    color: #333;
+    text-decoration: none;
+    transform: scale(1.1);
+}
+
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff4757;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .restaurant-info-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .restaurant-logo {
+        align-self: center;
+    }
+    
+    .category-sidebar {
+        margin-bottom: 20px;
+    }
+    
+    .category-list {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 12px;
+    }
+    
+    .category-link {
+        white-space: nowrap;
+    }
+    
+    .dishes-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dish-item {
+        flex-direction: column;
+    }
+    
+    .dish-image {
+        width: 100%;
+        height: 200px;
+    }
+}
+</style>
+
+<script>
+function addToCart(dishId) {
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            dish_id: dishId,
+            quantity: 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateCartDisplay(data.cart_count);
+            showToast('已添加到购物车', 'success');
+        } else {
+            showToast(data.message || '添加失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function updateCartDisplay(count) {
+    const floatingCart = document.getElementById('floating-cart');
+    const cartCount = document.getElementById('floating-cart-count');
+    const navCartCount = document.getElementById('cart-count');
+    
+    if (count > 0) {
+        floatingCart.style.display = 'block';
+        cartCount.textContent = count;
+        if (navCartCount) {
+            navCartCount.textContent = count;
+            navCartCount.style.display = 'flex';
+        }
+    } else {
+        floatingCart.style.display = 'none';
+        if (navCartCount) {
+            navCartCount.style.display = 'none';
+        }
+    }
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-' + (type === 'success' ? 'success' : 'danger') + ' toast-message';
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+    toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + ' me-2"></i>' + message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        document.body.removeChild(toast);
+    }, 3000);
+}
+
+// 分类导航点击事件
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryLinks = document.querySelectorAll('.category-link');
+    
+    categoryLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 更新活动状态
+            categoryLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 滚动到对应区域
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+    
+    // 添加到购物车事件委托
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.add-to-cart')) {
+            const button = e.target.closest('.add-to-cart');
+            const dishId = button.getAttribute('data-dish-id');
+            if (dishId) {
+                addToCart(dishId);
+            }
+        }
+    });
+    
+    // 初始化购物车数量
+    fetch('/cart/count')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCartDisplay(data.count);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching cart count:', error);
+        });
+});
+
+// 添加CSS动画
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %} 

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}分类管理 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tags me-2"></i>菜品分类管理</h2>
+                <a href="{{ url_for('category.add_category') }}" class="btn btn-warning">
+                    <i class="fas fa-plus me-2"></i>添加新分类
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    {% if categories %}
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>排序</th>
+                                <th>图标</th>
+                                <th>分类名称</th>
+                                <th>菜品数量</th>
+                                <th class="text-end">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <td>{{ category.sort_order }}</td>
+                                <td><i class="{{ category.icon or 'fas fa-tag' }}"></i></td>
+                                <td><strong>{{ category.name }}</strong></td>
+                                <td><span class="badge bg-secondary">{{ category.dishes.count() }}</span></td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('category.edit_category', category_id=category.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> 编辑
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger" data-category-id="{{ category.id }}" data-action="delete">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                    <form id="delete-form-{{ category.id }}" action="{{ url_for('category.delete_category', category_id=category.id) }}" method="POST" style="display: none;"></form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="alert alert-info">暂无分类数据，请先<a href="{{ url_for('category.add_category') }}">添加</a>。</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-action="delete"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const categoryId = this.dataset.categoryId;
+            if (confirm('确定要删除这个分类吗？此操作不可恢复。')) {
+                document.getElementById('delete-form-' + categoryId).submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

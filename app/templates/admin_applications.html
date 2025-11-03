@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>管理员申请审核</h2>
+    
+    {% if applications %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>申请ID</th>
+                        <th>申请用户</th>
+                        <th>申请理由</th>
+                        <th>申请时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for application in applications %}
+                    <tr>
+                        <td>{{ application.id }}</td>
+                        <td>{{ application.user.username }}</td>
+                        <td>{{ application.reason or '无' }}</td>
+                        <td>{{ application.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <a href="{{ url_for('auth.approve_application', app_id=application.id) }}" 
+                               class="btn btn-sm btn-success"
+                               onclick="return confirm('确认通过此申请？')">
+                                通过
+                            </a>
+                            <a href="{{ url_for('auth.reject_application', app_id=application.id) }}" 
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('确认拒绝此申请？')">
+                                拒绝
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p>暂无待审核的管理员申请。</p>
+        </div>
+    {% endif %}
+    
+    <a href="{{ url_for('dish.list_dishes') }}" class="btn btn-secondary">返回首页</a>
+</div>
+{% endblock %}

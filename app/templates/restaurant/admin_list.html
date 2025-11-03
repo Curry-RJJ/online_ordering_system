@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}餐厅管理 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="container">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-store me-2"></i>餐厅管理</h2>
+            <a href="{{ url_for('restaurant.add_restaurant') }}" class="btn btn-warning">
+                <i class="fas fa-plus me-2"></i>添加新餐厅
+            </a>
+        </div>
+
+        <div class="filter-section mb-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="keyword" 
+                           placeholder="搜索餐厅名称..." value="{{ request.args.get('keyword', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="status">
+                        <option value="">全部状态</option>
+                        <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>营业中</option>
+                        <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>已关闭</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i>搜索
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if restaurants %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Logo</th>
+                        <th>餐厅名称</th>
+                        <th>地址</th>
+                        <th>营业时间</th>
+                        <th>配送费</th>
+                        <th>起送价</th>
+                        <th>评分</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for restaurant in restaurants %}
+                    <tr>
+                        <td>{{ restaurant.id }}</td>
+                        <td>
+                            <img src="{{ restaurant.logo or '/static/images/default_restaurant.jpg' }}" 
+                                 alt="{{ restaurant.name }}" class="restaurant-logo-small">
+                        </td>
+                        <td>
+                            <strong>{{ restaurant.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ restaurant.description[:30] }}...</small>
+                        </td>
+                        <td>{{ restaurant.address }}</td>
+                        <td>{{ restaurant.business_hours }}</td>
+                        <td>¥{{ restaurant.delivery_fee }}</td>
+                        <td>¥{{ restaurant.min_order }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-star"></i> {{ restaurant.rating }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if restaurant.status == 'open' %}
+                                <span class="badge bg-success">营业中</span>
+                            {% else %}
+                                <span class="badge bg-danger">已关闭</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('restaurant.restaurant_detail', restaurant_id=restaurant.id) }}" 
+                                   class="btn btn-outline-info" title="查看">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('restaurant.edit_restaurant', restaurant_id=restaurant.id) }}" 
+                                   class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-warning" 
+                                        onclick="toggleStatus('{{ restaurant.id }}', '{{ restaurant.status }}')" title="切换状态">
+                                    <i class="fas fa-power-off"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        onclick="deleteRestaurant('{{ restaurant.id }}')" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if pagination %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.prev_num }}">上一页</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ pagination.next_num }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>暂无餐厅数据
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.page-header {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.restaurant-logo-small {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+
+<script>
+function toggleStatus(restaurantId, currentStatus) {
+    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+    const statusText = newStatus === 'open' ? '开启' : '关闭';
+    
+    if (confirm(`确定要${statusText}这家餐厅吗？`)) {
+        fetch(`/restaurant/${restaurantId}/toggle_status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('网络错误，请重试');
+        });
+    }
+}
+
+function deleteRestaurant(restaurantId) {
+    if (confirm('确定要删除这家餐厅吗？此操作不可恢复！')) {
+        window.location.href = `/restaurant/${restaurantId}/delete`;
+    }
+}
+</script>
+{% endblock %} 

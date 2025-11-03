@@ -1,0 +1,1026 @@
+{% extends "base.html" %}
+
+{% block title %}美团外卖 - 附近商家{% endblock %}
+
+{% block content %}
+<!-- 英雄区域 -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">
+                    <span class="text-gradient">美味送到家</span>
+                    <br>附近优质商家
+                </h1>
+                <p class="hero-subtitle">新鲜食材，用心烹饪，30分钟内送达</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ restaurants|length }}</div>
+                        <div class="stat-label">家商家</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">30</div>
+                        <div class="stat-label">分钟送达</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">4.8</div>
+                        <div class="stat-label">平均评分</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 紧凑的搜索和筛选区域 -->
+<div class="compact-controls-section">
+    <div class="container">
+        <div class="controls-wrapper">
+            <!-- 搜索区域 -->
+            <div class="search-area">
+                <form method="GET" class="search-form">
+                    <div class="search-input-wrapper">
+                        <i class="search-icon fas fa-search"></i>
+                        <input type="text" class="search-box" 
+                               name="keyword" value="{{ keyword }}" 
+                               placeholder="搜索商家或菜品...">
+                        <button type="submit" class="btn btn-meituan search-btn">
+                            搜索
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 筛选排序区域 -->
+            <div class="filter-area">
+                <div class="filter-buttons">
+                    <a href="{{ url_for('restaurant.list_restaurants', sort='rating', keyword=keyword, category=current_category) }}" 
+                       class="filter-btn {{ 'active' if sort_by == 'rating' else '' }}">
+                        <i class="fas fa-star me-1"></i>评分
+                    </a>
+                    <a href="{{ url_for('restaurant.list_restaurants', sort='sales', keyword=keyword, category=current_category) }}" 
+                       class="filter-btn {{ 'active' if sort_by == 'sales' else '' }}">
+                        <i class="fas fa-fire me-1"></i>销量
+                    </a>
+                    <a href="{{ url_for('restaurant.list_restaurants', sort='distance', keyword=keyword, category=current_category) }}" 
+                       class="filter-btn {{ 'active' if sort_by == 'distance' else '' }}">
+                        <i class="fas fa-map-marker-alt me-1"></i>距离
+                    </a>
+                </div>
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="list">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button class="view-btn" data-view="grid">
+                        <i class="fas fa-th"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 紧凑的分类导航 -->
+<div class="category-section">
+    <div class="container">
+        <div class="category-header">
+            <h4 class="category-title">
+                <i class="fas fa-th-large me-2"></i>商家分类
+            </h4>
+        </div>
+        <div class="category-scroll-wrapper">
+            <div class="category-list">
+                <a href="{{ url_for('restaurant.list_restaurants') }}" 
+                   class="category-item {{ 'active' if not current_category }}">
+                    <div class="category-icon">🍽️</div>
+                    <span class="category-name">全部</span>
+                </a>
+                {% for category in categories %}
+                <a href="{{ url_for('restaurant.list_restaurants', category=category.id) }}" 
+                   class="category-item {{ 'active' if current_category == category.id }}">
+                    <div class="category-icon">
+                        {% if category.icon and category.icon.startswith('fas') %}
+                            <i class="{{ category.icon }}"></i>
+                        {% elif category.icon %}
+                            {{ category.icon }}
+                        {% elif category.name == '热菜' %}🍲
+                        {% elif category.name == '凉菜' %}🥗
+                        {% elif category.name == '主食' %}🍚
+                        {% elif category.name == '汤品' %}🍜
+                        {% elif category.name == '饮品' %}🥤
+                        {% elif category.name == '甜品' %}🍰
+                        {% elif category.name == '披萨' %}🍕
+                        {% elif category.name == '意面' %}🍝
+                        {% elif category.name == '小食' %}🍟
+                        {% else %}🍴{% endif %}
+                    </div>
+                    <span class="category-name">{{ category.name }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 餐厅列表 -->
+<div class="restaurants-section">
+    <div class="container">
+        {% if restaurants %}
+        <div class="restaurants-grid" id="restaurantsGrid">
+            {% for restaurant in restaurants %}
+            <div class="restaurant-card fade-in" data-delay="{{ loop.index0 * 0.1 }}">
+                <div class="restaurant-image-wrapper">
+                    <img src="{{ restaurant.logo or '/static/images/default_restaurant.jpg' }}" 
+                         alt="{{ restaurant.name }}" 
+                         class="restaurant-image"
+                         loading="lazy">
+                    
+                    <!-- 状态徽章 -->
+                    {% if restaurant.status == 'busy' %}
+                    <div class="status-badge busy">
+                        <i class="fas fa-clock me-1"></i>繁忙
+                    </div>
+                    {% elif restaurant.status == 'closed' %}
+                    <div class="status-badge closed">
+                        <i class="fas fa-moon me-1"></i>休息中
+                    </div>
+                    {% else %}
+                    <div class="status-badge open">
+                        <i class="fas fa-check me-1"></i>营业中
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 快速操作 -->
+                    <div class="quick-actions">
+                        <button class="quick-btn" data-bs-toggle="tooltip" title="收藏">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <button class="quick-btn" data-bs-toggle="tooltip" title="分享">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="restaurant-content">
+                    <div class="restaurant-header">
+                        <h5 class="restaurant-name">{{ restaurant.name }}</h5>
+                        <div class="restaurant-rating">
+                            <div class="rating-stars">
+                                {% for i in range(5) %}
+                                    {% if i < restaurant.rating %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="rating-number">{{ restaurant.rating }}</span>
+                            <span class="review-count">({{ restaurant.review_count }})</span>
+                        </div>
+                    </div>
+                    
+                    <p class="restaurant-description">{{ restaurant.description }}</p>
+                    
+                    <div class="restaurant-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ restaurant.business_hours }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ restaurant.address[:30] }}{% if restaurant.address|length > 30 %}...{% endif %}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="restaurant-footer">
+                        <div class="delivery-info">
+                            <div class="delivery-item">
+                                {% if restaurant.delivery_fee == 0 %}
+                                    <span class="delivery-free">
+                                        <i class="fas fa-shipping-fast me-1"></i>免配送费
+                                    </span>
+                                {% else %}
+                                    <span class="delivery-fee">
+                                        <i class="fas fa-truck me-1"></i>配送 ¥{{ restaurant.delivery_fee }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="delivery-item">
+                                <span class="min-order">
+                                    <i class="fas fa-shopping-bag me-1"></i>起送 ¥{{ restaurant.min_order }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="restaurant-actions">
+                            <a href="{{ url_for('restaurant.restaurant_detail', restaurant_id=restaurant.id) }}" 
+                               class="btn btn-meituan">
+                                <i class="fas fa-utensils me-2"></i>立即下单
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-content">
+                <div class="empty-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="empty-title">没有找到相关商家</h3>
+                <p class="empty-description">试试其他关键词或筛选条件，或者查看全部商家</p>
+                <div class="empty-actions">
+                    <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-meituan">
+                        <i class="fas fa-store me-2"></i>查看全部商家
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* 基础配色和变量 */
+:root {
+    --section-spacing: 2rem;
+    --compact-spacing: 1rem;
+    --divider-color: #e5e7eb;
+    --header-bg: #ffffff;
+    --header-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* 英雄区域优化 */
+.hero-section {
+    background: linear-gradient(135deg, #ffd900 0%, #ff8800 50%, #ff6b35 100%);
+    padding: 3rem 0 2rem 0;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+.hero-title {
+    font-size: 3.2rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    color: #334155;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 2;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.hero-stats {
+    display: flex;
+    gap: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1.2rem;
+    background: rgba(255,255,255,0.95);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.stat-number {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+    font-weight: 600;
+}
+
+/* 紧凑的搜索和筛选控制区域 */
+.compact-controls-section {
+    background: #ffffff;
+    padding: var(--compact-spacing) 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.controls-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+/* 紧凑搜索区域 */
+.search-area {
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2px;
+    transition: all 0.2s ease;
+}
+
+.search-input-wrapper:focus-within {
+    border-color: #ffd900;
+    box-shadow: 0 0 0 3px rgba(255, 217, 0, 0.1);
+    background: #ffffff;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    font-size: 1rem;
+    z-index: 2;
+}
+
+.search-box {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 10px 12px 10px 36px;
+    font-size: 14px;
+    background: transparent;
+    color: #1e293b;
+}
+
+.search-btn {
+    margin: 0;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 紧凑筛选区域 */
+.filter-area {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #64748b;
+    background: #f1f5f9;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    background: linear-gradient(135deg, #ffd900, #ff8800);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 136, 0, 0.25);
+    border-color: #ff8800;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.view-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.view-btn:hover,
+.view-btn.active {
+    background: #ffd900;
+    color: #1e293b;
+}
+
+/* 紧凑分类区域 */
+.category-section {
+    background: #f8fafc;
+    padding: var(--compact-spacing) 0;
+}
+
+.category-header {
+    margin-bottom: 0.8rem;
+}
+
+.category-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.category-scroll-wrapper {
+    position: relative;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.category-scroll-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+
+.category-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+.category-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.category-list {
+    display: flex;
+    gap: 0.8rem;
+    padding: 0.2rem 0;
+    white-space: nowrap;
+}
+
+.category-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #64748b;
+    transition: all 0.2s ease;
+    min-width: 70px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.category-item:hover,
+.category-item.active {
+    background: #ffd900;
+    color: #1e293b;
+    border-color: #ffd900;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 217, 0, 0.3);
+}
+
+.category-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+}
+
+.category-name {
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* 餐厅列表区域优化 */
+.restaurants-section {
+    padding: var(--section-spacing) 0;
+    background: #f8fafc;
+    min-height: 60vh;
+}
+
+.restaurants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.restaurant-card {
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    border: 1px solid #f1f5f9;
+}
+
+.restaurant-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+    border-color: #ffd900;
+}
+
+.restaurant-image-wrapper {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.restaurant-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.restaurant-card:hover .restaurant-image {
+    transform: scale(1.08);
+}
+
+.status-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    z-index: 2;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    backdrop-filter: blur(8px);
+}
+
+.status-badge.open {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.status-badge.busy {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.status-badge.closed {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.quick-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.restaurant-card:hover .quick-actions {
+    opacity: 1;
+}
+
+.quick-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+}
+
+.quick-btn:hover {
+    background: #ffffff;
+    color: #ef4444;
+    transform: scale(1.1);
+}
+
+.restaurant-content {
+    padding: 1.5rem;
+}
+
+.restaurant-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.restaurant-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    flex: 1;
+}
+
+.restaurant-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.rating-stars {
+    color: #fbbf24;
+    font-size: 0.9rem;
+}
+
+.rating-number {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.review-count {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.restaurant-description {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.restaurant-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.meta-item i {
+    width: 16px;
+    color: #f59e0b;
+    font-size: 0.9rem;
+}
+
+.restaurant-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+}
+
+.delivery-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.delivery-item {
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.delivery-free {
+    color: #10b981;
+    font-weight: 700;
+}
+
+.delivery-fee,
+.min-order {
+    color: #64748b;
+}
+
+/* 空状态优化 */
+.empty-state {
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.empty-content {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2.5rem;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    border: 1px solid #f1f5f9;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 1.5rem;
+}
+
+.empty-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 0.8rem;
+}
+
+.empty-description {
+    color: #64748b;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+/* 动画效果 */
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 响应式设计优化 */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.2rem;
+    }
+    
+    .hero-stats {
+        gap: 1rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+    }
+    
+    .controls-wrapper {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .search-area {
+        max-width: none;
+    }
+    
+    .filter-area {
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    .filter-buttons {
+        flex: 1;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+    
+    .category-list {
+        gap: 0.6rem;
+    }
+    
+    .category-item {
+        min-width: 65px;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .restaurants-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .restaurant-header {
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: flex-start;
+    }
+    
+    .restaurant-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .search-input-wrapper {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.8rem;
+    }
+    
+    .search-box {
+        padding: 12px 16px;
+        text-align: center;
+    }
+    
+    .search-btn {
+        width: 100%;
+    }
+    
+    .search-icon {
+        display: none;
+    }
+    
+    .filter-buttons {
+        gap: 0.3rem;
+    }
+    
+    .filter-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+/* 滚动条样式 */
+.category-scroll-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/modern.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 设置动画延迟
+    document.querySelectorAll('.restaurant-card[data-delay]').forEach(card => {
+        const delay = card.getAttribute('data-delay');
+        card.style.animationDelay = delay + 's';
+    });
+    
+    // 餐厅卡片点击事件
+    document.querySelectorAll('.restaurant-card').forEach(card => {
+        const url = card.querySelector('a')?.href;
+        if (url) {
+            card.addEventListener('click', function(e) {
+                if (!e.target.closest('.quick-actions') && !e.target.closest('.restaurant-actions')) {
+                    window.location.href = url;
+                }
+            });
+        }
+    });
+    
+    // 视图切换
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const view = this.dataset.view;
+            const grid = document.getElementById('restaurantsGrid');
+            
+            if (view === 'grid') {
+                grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            } else {
+                grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(380px, 1fr))';
+            }
+        });
+    });
+    
+    // 收藏功能
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        if (btn.querySelector('.fa-heart')) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const icon = this.querySelector('i');
+                if (icon.classList.contains('far')) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                    this.style.color = '#ef4444';
+                    showNotification('已添加到收藏', 'success');
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    this.style.color = '';
+                    showNotification('已取消收藏', 'info');
+                }
+            });
+        }
+    });
+    
+    // 分类列表平滑滚动
+    const categoryList = document.querySelector('.category-list');
+    const activeCategory = document.querySelector('.category-item.active');
+    
+    if (categoryList && activeCategory) {
+        // 将激活的分类滚动到可视区域
+        setTimeout(() => {
+            activeCategory.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center'
+            });
+        }, 100);
+    }
+    
+    // 平滑滚动到指定区域
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+
+// 通知函数
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'info'} notification-toast`;
+    notification.style.cssText = `
+        position: fixed; 
+        top: 20px; 
+        right: 20px; 
+        z-index: 9999; 
+        min-width: 250px;
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        border: none;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-out;
+        font-size: 14px;
+        padding: 12px 16px;
+    `;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+        ${message}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 显示动画
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // 移除动画
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+</script>
+{% endblock %} 

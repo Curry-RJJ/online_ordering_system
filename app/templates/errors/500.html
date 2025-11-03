@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}服务器错误 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-template">
+                <h1 class="display-1 text-danger">500</h1>
+                <h2>哎呀！服务器出错了</h2>
+                <div class="error-details mb-4">
+                    抱歉，服务器遇到了一些内部问题，我们正在紧急修复！
+                </div>
+                <div class="error-actions">
+                    <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-home me-2"></i>返回首页
+                    </a>
+                    <a href="javascript:location.reload()" class="btn btn-outline-secondary btn-lg ms-2">
+                        <i class="fas fa-sync-alt me-2"></i>刷新页面
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-template {
+    padding: 40px 15px;
+}
+
+.error-details {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.display-1 {
+    font-weight: 300;
+}
+</style>
+{% endblock %} 

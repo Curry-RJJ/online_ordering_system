@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}添加菜品 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0 text-dark">
+                        <i class="fas fa-plus me-2"></i>添加新菜品
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('dish.add_dish') }}" enctype="multipart/form-data">
+                        <!-- 基本信息 -->
+                        <h5 class="mb-3">基本信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">菜品名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="restaurant_id" class="form-label">所属餐厅 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="restaurant_id" name="restaurant_id" required>
+                                    <option value="">请选择餐厅</option>
+                                    {% for restaurant in restaurants %}
+                                    <option value="{{ restaurant.id }}">{{ restaurant.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">菜品描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="请输入菜品的详细描述..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="category_id" class="form-label">菜品分类</label>
+                                <select class="form-select" id="category_id" name="category_id">
+                                    <option value="">请选择分类</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="ingredients" class="form-label">主要食材</label>
+                                <input type="text" class="form-control" id="ingredients" name="ingredients" 
+                                       placeholder="如：鸡肉、青椒、花生">
+                            </div>
+                        </div>
+
+                        <!-- 价格信息 -->
+                        <h5 class="mb-3 mt-4">价格信息</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="price" class="form-label">现价（元）<span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="price" name="price" 
+                                       min="0" step="0.01" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="original_price" class="form-label">原价（元）</label>
+                                <input type="number" class="form-control" id="original_price" name="original_price" 
+                                       min="0" step="0.01" placeholder="选填">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="discount_rate" class="form-label">折扣率</label>
+                                <input type="number" class="form-control" id="discount_rate" name="discount_rate" 
+                                       min="0" max="1" step="0.01" placeholder="如：0.8">
+                            </div>
+                        </div>
+
+                        <!-- 其他信息 -->
+                        <h5 class="mb-3 mt-4">其他信息</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="rating" class="form-label">初始评分</label>
+                                <input type="number" class="form-control" id="rating" name="rating" 
+                                       value="4.5" min="0" max="5" step="0.1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="sales_count" class="form-label">初始销量</label>
+                                <input type="number" class="form-control" id="sales_count" name="sales_count" 
+                                       value="0" min="0">
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">菜品图片</label>
+                                
+                                <!-- 文件上传选项 -->
+                                <div class="mb-2">
+                                    <label for="image_file" class="form-label">上传图片</label>
+                                    <input type="file" class="form-control" id="image_file" name="image_file" 
+                                           accept="image/*" onchange="previewImage(this, 'image-preview')">
+                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸 600x400px</small>
+                                </div>
+                                
+                                <!-- 图片预览 -->
+                                <div id="image-preview" class="image-preview mb-2" style="display: none;">
+                                    <img src="" alt="图片预览" class="img-thumbnail" style="max-height: 150px;">
+                                    <small class="text-success d-block">图片预览</small>
+                                </div>
+                                
+                                <!-- URL输入选项 -->
+                                <div class="mb-2">
+                                    <label for="image_url" class="form-label">或输入图片URL</label>
+                                    <input type="text" class="form-control" id="image_url" name="image_url" 
+                                           placeholder="https://example.com/dish.jpg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 状态设置 -->
+                        <h5 class="mb-3 mt-4">状态设置</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="available" name="available" checked>
+                                    <label class="form-check-label" for="available">
+                                        上架销售
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_recommended" name="is_recommended">
+                                    <label class="form-check-label" for="is_recommended">
+                                        推荐菜品
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_spicy" name="is_spicy">
+                                    <label class="form-check-label" for="is_spicy">
+                                        辣味菜品
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('dish.admin_dishes') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>取消
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>添加菜品
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-label {
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #ffd900;
+    box-shadow: 0 0 0 0.2rem rgba(255, 217, 0, 0.25);
+}
+
+h5 {
+    color: #333;
+    border-bottom: 2px solid #ffd900;
+    padding-bottom: 8px;
+}
+
+.form-check-input:checked {
+    background-color: #ffd900;
+    border-color: #ffd900;
+}
+
+.image-preview {
+    border: 1px solid #28a745;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    background-color: #f8fff9;
+}
+</style>
+
+<script>
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const img = preview.querySelector('img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// 文件大小检查
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    
+    fileInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // 检查文件大小（5MB限制）
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('文件大小不能超过5MB');
+                    this.value = '';
+                    return;
+                }
+                
+                // 检查文件类型
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('只支持 JPG、PNG、GIF、WEBP 格式的图片');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

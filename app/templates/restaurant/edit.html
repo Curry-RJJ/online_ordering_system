@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}编辑餐厅 - 美团外卖{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0 text-dark">
+                        <i class="fas fa-edit me-2"></i>编辑餐厅信息
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('restaurant.edit_restaurant', restaurant_id=restaurant.id) }}" enctype="multipart/form-data">
+                        <!-- 基本信息 -->
+                        <h5 class="mb-3">基本信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">餐厅名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ restaurant.name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">联系电话</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       value="{{ restaurant.phone }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">餐厅描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ restaurant.description }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">餐厅地址 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="address" name="address" 
+                                   value="{{ restaurant.address }}" required>
+                        </div>
+
+                        <!-- 营业信息 -->
+                        <h5 class="mb-3 mt-4">营业信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="business_hours" class="form-label">营业时间</label>
+                                <input type="text" class="form-control" id="business_hours" name="business_hours" 
+                                       value="{{ restaurant.business_hours }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">营业状态</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="open" {% if restaurant.status == 'open' %}selected{% endif %}>营业中</option>
+                                    <option value="closed" {% if restaurant.status == 'closed' %}selected{% endif %}>已关闭</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 配送信息 -->
+                        <h5 class="mb-3 mt-4">配送信息</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="min_order" class="form-label">起送金额（元）</label>
+                                <input type="number" class="form-control" id="min_order" name="min_order" 
+                                       value="{{ restaurant.min_order }}" min="0" step="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="delivery_fee" class="form-label">配送费（元）</label>
+                                <input type="number" class="form-control" id="delivery_fee" name="delivery_fee" 
+                                       value="{{ restaurant.delivery_fee }}" min="0" step="0.5">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="rating" class="form-label">评分</label>
+                                <input type="number" class="form-control" id="rating" name="rating" 
+                                       value="{{ restaurant.rating }}" min="0" max="5" step="0.1">
+                            </div>
+                        </div>
+
+                        <!-- 图片信息 -->
+                        <h5 class="mb-3 mt-4">图片信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">餐厅Logo</label>
+                                
+                                <!-- 当前图片预览 -->
+                                {% if restaurant.logo %}
+                                <div class="current-image mb-2">
+                                    <img src="{{ restaurant.logo }}" alt="当前Logo" class="img-thumbnail" style="max-height: 100px;" 
+                                         onerror="this.src='/static/images/default_restaurant.jpg'; this.onerror=null;">
+                                    <small class="text-muted d-block">当前Logo: {{ restaurant.logo }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 文件上传选项 -->
+                                <div class="mb-2">
+                                    <label for="logo_file" class="form-label">上传新Logo</label>
+                                    <input type="file" class="form-control" id="logo_file" name="logo_file" 
+                                           accept="image/*" onchange="previewImage(this, 'logo-preview')">
+                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸 200x200px</small>
+                                </div>
+                                
+                                <!-- 新图片预览 -->
+                                <div id="logo-preview" class="image-preview mb-2" style="display: none;">
+                                    <img src="" alt="Logo预览" class="img-thumbnail" style="max-height: 100px;">
+                                    <small class="text-success d-block">新Logo预览</small>
+                                </div>
+                                
+                                <!-- URL输入选项 -->
+                                <div class="mb-2">
+                                    <label for="logo_url" class="form-label">或输入图片URL</label>
+                                    <input type="text" class="form-control" id="logo_url" name="logo_url" 
+                                           value="{{ restaurant.logo if restaurant.logo and restaurant.logo.startswith('http') else '' }}" 
+                                           placeholder="https://example.com/logo.jpg">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">餐厅横幅</label>
+                                
+                                <!-- 当前图片预览 -->
+                                {% if restaurant.banner %}
+                                <div class="current-image mb-2">
+                                    <img src="{{ restaurant.banner }}" alt="当前横幅" class="img-thumbnail" style="max-height: 100px; max-width: 100%;"
+                                         onerror="this.src='/static/images/default_restaurant.jpg'; this.onerror=null;">
+                                    <small class="text-muted d-block">当前横幅: {{ restaurant.banner }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 文件上传选项 -->
+                                <div class="mb-2">
+                                    <label for="banner_file" class="form-label">上传新横幅</label>
+                                    <input type="file" class="form-control" id="banner_file" name="banner_file" 
+                                           accept="image/*" onchange="previewImage(this, 'banner-preview')">
+                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸 800x300px</small>
+                                </div>
+                                
+                                <!-- 新图片预览 -->
+                                <div id="banner-preview" class="image-preview mb-2" style="display: none;">
+                                    <img src="" alt="横幅预览" class="img-thumbnail" style="max-height: 100px; max-width: 100%;">
+                                    <small class="text-success d-block">新横幅预览</small>
+                                </div>
+                                
+                                <!-- URL输入选项 -->
+                                <div class="mb-2">
+                                    <label for="banner_url" class="form-label">或输入图片URL</label>
+                                    <input type="text" class="form-control" id="banner_url" name="banner_url" 
+                                           value="{{ restaurant.banner if restaurant.banner and restaurant.banner.startswith('http') else '' }}" 
+                                           placeholder="https://example.com/banner.jpg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('restaurant.admin_restaurants') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>取消
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-label {
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #ffd900;
+    box-shadow: 0 0 0 0.2rem rgba(255, 217, 0, 0.25);
+}
+
+h5 {
+    color: #333;
+    border-bottom: 2px solid #ffd900;
+    padding-bottom: 8px;
+}
+
+.current-image {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.image-preview {
+    border: 1px solid #28a745;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    background-color: #f8fff9;
+}
+</style>
+
+<script>
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const img = preview.querySelector('img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// 文件大小检查
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    
+    fileInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // 检查文件大小（5MB限制）
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('文件大小不能超过5MB');
+                    this.value = '';
+                    return;
+                }
+                
+                // 检查文件类型
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('只支持 JPG、PNG、GIF、WEBP 格式的图片');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 
