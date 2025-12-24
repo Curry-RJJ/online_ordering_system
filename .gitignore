@@ -55,8 +55,21 @@ logs/
 app/static/uploads/
 static/uploads/
 
+# 用户上传的图片（保留示例图片，忽略用户上传的）
+app/static/images/dishes/*.jpg
+app/static/images/dishes/*.png
+!app/static/images/dishes/default.jpg
+app/static/images/logos/*.jpg
+app/static/images/logos/*.png
+app/static/images/banners/*.jpg
+app/static/images/banners/*.png
+app/static/images/restaurants/*.jpg
+app/static/images/restaurants/*.png
+
 # 迁移相关
 migrations/__pycache__/
+migrations/versions/*.py
+!migrations/versions/__init__.py
 
 # Windows
 Thumbs.db
@@ -66,3 +79,9 @@ Desktop.ini
 # 临时文件
 *.tmp
 *.bak
+
+# Docker volumes
+mysql_data/
+
+# 批处理文件（根据需要可以取消此忽略）
+# *.bat

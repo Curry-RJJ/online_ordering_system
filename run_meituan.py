@@ -13,7 +13,9 @@ from flask_login import LoginManager
 
 def create_app_with_config(use_mysql=False):
     """根据配置创建Flask应用"""
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                template_folder='app/templates',
+                static_folder='app/static')
     
     if use_mysql:
         # 使用MySQL配置
@@ -38,12 +40,16 @@ def create_app_with_config(use_mysql=False):
     from app.routes.order import order_bp
     from app.routes.restaurant import restaurant_bp
     from app.routes.cart import cart_bp
+    from app.routes.restaurant_category import restaurant_category_bp
+    from app.routes.category import category_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dish_bp)
     app.register_blueprint(order_bp)
     app.register_blueprint(restaurant_bp)
     app.register_blueprint(cart_bp)
+    app.register_blueprint(restaurant_category_bp)
+    app.register_blueprint(category_bp)
 
     # 首页路由
     from flask_login import current_user
