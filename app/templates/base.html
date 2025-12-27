@@ -19,13 +19,11 @@
             border-bottom: none;
         }
         
-        /* 确保没有默认的导航栏边框 */
         .navbar {
             border: none !important;
             border-bottom: none !important;
         }
         
-        /* 移除可能的分隔线 */
         .navbar::after,
         .navbar-modern::after {
             display: none !important;
@@ -52,7 +50,7 @@
         
         .main-content {
             min-height: calc(100vh - 200px);
-            padding: 20px 0;
+            padding: 0;
             border-top: none;
             margin-top: 0;
         }
@@ -150,17 +148,6 @@
 
     <!-- 主内容区域 -->
     <main class="main-content">
-        <!-- 消息提示 - 改为隐藏的Toast通知 -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div id="flashMessages" style="display: none;">
-                {% for category, message in messages %}
-                <div class="flash-message" data-category="{{ 'danger' if category == 'error' else category }}" data-message="{{ message }}"></div>
-                {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-        
         {% block content %}{% endblock %}
     </main>
     
@@ -168,68 +155,60 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     
+    <!-- Flash消息处理 - 直接转换为Toast -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
     <script>
-    // Toast 通知功能
-    document.addEventListener('DOMContentLoaded', function() {
-        // 处理Flash消息
-        const flashContainer = document.getElementById('flashMessages');
-        if (flashContainer) {
-            const messages = flashContainer.querySelectorAll('.flash-message');
-            messages.forEach((msg, index) => {
-                const category = msg.dataset.category;
-                const message = msg.dataset.message;
-                
-                // 延迟显示，让每个通知依次出现
-                setTimeout(() => {
-                    showToast(message, category);
-                }, index * 200);
-            });
-        }
-    });
+    // 在页面加载时立即显示Toast通知
+    window.flashMessages = [
+        {% for category, message in messages %}
+        {type: "{{ 'danger' if category == 'error' else category }}", message: "{{ message|safe }}"},
+        {% endfor %}
+    ];
+    </script>
+    {% endif %}
+    {% endwith %}
     
-    // 显示Toast通知
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        const iconMap = {
+    <script>
+    // Toast通知函数
+    function showToast(message, type) {
+        type = type || 'info';
+        
+        const colors = {
+            'success': '#10b981',
+            'danger': '#ef4444',
+            'warning': '#f59e0b',
+            'info': '#3b82f6'
+        };
+        
+        const icons = {
             'success': 'check-circle',
             'danger': 'exclamation-circle',
             'warning': 'exclamation-triangle',
             'info': 'info-circle'
         };
         
-        const colorMap = {
-            'success': 'linear-gradient(135deg, #10b981, #059669)',
-            'danger': 'linear-gradient(135deg, #ef4444, #dc2626)',
-            'warning': 'linear-gradient(135deg, #f59e0b, #d97706)',
-            'info': 'linear-gradient(135deg, #3b82f6, #2563eb)'
-        };
-        
-        toast.className = 'toast-notification';
+        const toast = document.createElement('div');
         toast.style.cssText = `
             position: fixed;
             top: 80px;
             right: 20px;
-            z-index: 9999;
+            z-index: 999999;
             min-width: 300px;
-            max-width: 400px;
-            background: ${colorMap[type] || colorMap['info']};
+            background: ${colors[type] || colors['info']};
             color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transform: translateX(450px);
-            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             gap: 12px;
             font-size: 14px;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255,255,255,0.2);
+            animation: slideIn 0.3s ease-out;
         `;
         
         toast.innerHTML = `
-            <i class="fas fa-${iconMap[type] || iconMap['info']}" style="font-size: 20px;"></i>
+            <i class="fas fa-${icons[type] || icons['info']}" style="font-size: 18px;"></i>
             <span style="flex: 1;">${message}</span>
             <button onclick="this.parentElement.remove()" style="
                 background: rgba(255,255,255,0.2);
@@ -239,45 +218,40 @@
                 height: 24px;
                 border-radius: 50%;
                 cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-                transition: all 0.2s;
-            " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                <i class="fas fa-times"></i>
-            </button>
+                font-size: 14px;
+            ">×</button>
         `;
         
         document.body.appendChild(toast);
         
-        // 显示动画
         setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // 自动移除
-        setTimeout(() => {
-            toast.style.transform = 'translateX(450px)';
-            setTimeout(() => {
-                if (document.body.contains(toast)) {
-                    document.body.removeChild(toast);
-                }
-            }, 400);
+            toast.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => toast.remove(), 300);
         }, 4000);
-        
-        // 调整已存在的toast位置
-        adjustToastPositions();
     }
     
-    // 调整多个toast的位置
-    function adjustToastPositions() {
-        const toasts = document.querySelectorAll('.toast-notification');
-        toasts.forEach((toast, index) => {
-            toast.style.top = (80 + index * 80) + 'px';
-        });
-    }
+    // 页面加载后显示所有Flash消息
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.flashMessages !== 'undefined') {
+            window.flashMessages.forEach((msg, index) => {
+                setTimeout(() => {
+                    showToast(msg.message, msg.type);
+                }, index * 200);
+            });
+        }
+    });
     </script>
+    
+    <style>
+    @keyframes slideIn {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
+    }
+    </style>
     
     {% block scripts %}{% endblock %}
 </body>

@@ -9,6 +9,11 @@ login_manager = LoginManager()
 def create_app(config_name='default'):
     app = Flask(__name__)
     
+    # 禁用模板缓存（开发时使用）
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.jinja_env.auto_reload = True
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+    
     # 直接配置基本设置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-please-change-in-production'
     
