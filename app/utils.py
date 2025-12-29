@@ -53,13 +53,7 @@ def format_datetime(dt):
         return ''
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
-# 允许的图片格式
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-
-def allowed_file(filename):
-    """检查文件扩展名是否允许"""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# 注：allowed_file 函数已在前面定义（第34-38行），此处删除重复定义
 
 def generate_unique_filename(original_filename):
     """生成唯一的文件名"""

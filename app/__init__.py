@@ -17,6 +17,13 @@ def create_app(config_name='default'):
     # 直接配置基本设置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-please-change-in-production'
     
+    # 生产环境安全检查：强制要求设置 SECRET_KEY
+    # 判断是否为生产环境：检查 FLASK_ENV 或 DATABASE_URL（使用 MySQL 即为生产环境）
+    is_production = (os.environ.get('FLASK_ENV') == 'production' or 
+                     os.environ.get('DATABASE_URL', '').startswith('mysql'))
+    if is_production and not os.environ.get('SECRET_KEY'):
+        raise RuntimeError("生产环境必须设置 SECRET_KEY 环境变量！")
+    
     # 数据库配置
     basedir = os.path.abspath(os.path.dirname(__file__))
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
