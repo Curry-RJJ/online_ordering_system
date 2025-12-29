@@ -53,6 +53,15 @@ class ProductionConfig(Config):
         f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@'
         f'{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4'
     )
+    
+    # 生产环境数据库连接池优化配置
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,      # 连接前检测连接是否有效
+        'pool_size': 20,             # 连接池大小（默认5，提升至20以支持高并发）
+        'max_overflow': 10,          # 最大溢出连接数（超过pool_size后的额外连接）
+        'pool_recycle': 3600,        # 连接回收时间（秒），防止MySQL连接超时
+        'echo': False                # 不显示SQL语句
+    }
 
 # 配置映射
 config = {
