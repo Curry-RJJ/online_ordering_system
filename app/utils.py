@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
@@ -8,25 +9,22 @@ from PIL import Image
 import hashlib
 
 def setup_logging(app):
-    """配置日志系统"""
+    """
+    配置日志系统
+    
+    在生产环境下使用 StreamHandler 输出到 stdout，
+    避免 Gunicorn 多进程下的文件写入冲突问题。
+    日志由 Docker/Gunicorn 统一管理和收集。
+    """
     if not app.debug:
-        # 确保日志目录存在
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        
-        # 设置文件日志处理器
-        file_handler = RotatingFileHandler(
-            'logs/meituan.log',
-            maxBytes=10240000,  # 10MB
-            backupCount=10
-        )
-        
-        file_handler.setFormatter(logging.Formatter(
+        # 生产环境：使用 StreamHandler 输出到 stdout
+        # 由 Docker 日志驱动和 Gunicorn 统一管理，避免多进程文件锁冲突
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
         ))
-        
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
+        stream_handler.setLevel(logging.INFO)
+        app.logger.addHandler(stream_handler)
         
         app.logger.setLevel(logging.INFO)
         app.logger.info('美团外卖系统启动')
