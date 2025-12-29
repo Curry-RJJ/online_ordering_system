@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User, AdminApplication, Address
 from app import db
+from sqlalchemy.exc import IntegrityError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -12,16 +13,17 @@ def register():
         username = request.form['username']
         password = request.form['password']
 
-        if User.query.filter_by(username=username).first():
+        try:
+            hashed_pw = generate_password_hash(password)
+            new_user = User(username=username, password=hashed_pw)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('注册成功，请登录')
+            return redirect(url_for('auth.login'))
+        except IntegrityError:
+            db.session.rollback()
             flash('用户名已存在')
             return redirect(url_for('auth.register'))
-
-        hashed_pw = generate_password_hash(password)
-        new_user = User(username=username, password=hashed_pw)
-        db.session.add(new_user)
-        db.session.commit()
-        flash('注册成功，请登录')
-        return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')
 
