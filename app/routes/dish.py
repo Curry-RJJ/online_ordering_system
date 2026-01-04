@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.models import Dish, Restaurant, Category
+from app.models import Dish, Restaurant, Category, RestaurantChangeRequest
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
 from app import db
+import json
 
 dish_bp = Blueprint('dish', __name__, url_prefix='/dish')
 
@@ -14,14 +15,16 @@ def list_dishes():
 @dish_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_dish():
-    if current_user.role != 'admin':
+    # 权限检查
+    if current_user.role == 'admin':
+        pass
+    elif current_user.role == 'merchant' and current_user.restaurant_id:
+        pass
+    else:
         flash('权限不足')
         return redirect(url_for('dish.list_dishes'))
 
     if request.method == 'POST':
-        # 确保图片目录存在
-        create_image_directories()
-        
         # 基本信息
         name = request.form['name']
         price = float(request.form['price'])
@@ -29,6 +32,10 @@ def add_dish():
         restaurant_id = request.form.get('restaurant_id', type=int)
         category_id = request.form.get('category_id', type=int) or None
         ingredients = request.form.get('ingredients', '')
+        
+        # 商家管理员只能为自己的商家添加菜品
+        if current_user.role == 'merchant':
+            restaurant_id = current_user.restaurant_id
         
         # 价格信息
         original_price = float(request.form.get('original_price') or 0) or None
@@ -42,14 +49,13 @@ def add_dish():
         image = ''
         image_file = request.files.get('image_file')
         if image_file and image_file.filename:
-            # 保存新的图片
+            create_image_directories()
             new_image_path = save_uploaded_image(image_file, 'dishes', max_size=(600, 400))
             if new_image_path:
                 image = new_image_path
             else:
                 flash('菜品图片上传失败，请检查文件格式')
         elif request.form.get('image_url'):
-            # 如果没有上传文件但有URL，使用URL
             image = request.form.get('image_url', '')
         
         # 状态设置
@@ -57,30 +63,65 @@ def add_dish():
         is_recommended = request.form.get('is_recommended') == 'on'
         is_spicy = request.form.get('is_spicy') == 'on'
 
-        new_dish = Dish(
-            name=name,
-            price=price,
-            description=description,
-            restaurant_id=restaurant_id,
-            category_id=category_id,
-            ingredients=ingredients,
-            original_price=original_price,
-            discount_rate=discount_rate,
-            rating=rating,
-            sales_count=sales_count,
-            image=image,
-            available=available,
-            is_recommended=is_recommended,
-            is_spicy=is_spicy
-        )
-        
-        db.session.add(new_dish)
-        db.session.commit()
-        flash('菜品添加成功')
-        return redirect(url_for('dish.admin_dishes'))
+        if current_user.role == 'admin':
+            # 管理员直接添加
+            new_dish = Dish(
+                name=name,
+                price=price,
+                description=description,
+                restaurant_id=restaurant_id,
+                category_id=category_id,
+                ingredients=ingredients,
+                original_price=original_price,
+                discount_rate=discount_rate,
+                rating=rating,
+                sales_count=sales_count,
+                image=image,
+                available=available,
+                is_recommended=is_recommended,
+                is_spicy=is_spicy
+            )
+            db.session.add(new_dish)
+            db.session.commit()
+            flash('菜品添加成功')
+            return redirect(url_for('dish.admin_dishes'))
+        else:
+            # 商家管理员提交审核
+            change_data = {
+                'name': name,
+                'price': price,
+                'description': description,
+                'restaurant_id': restaurant_id,
+                'category_id': category_id,
+                'ingredients': ingredients,
+                'original_price': original_price,
+                'discount_rate': discount_rate,
+                'rating': rating,
+                'sales_count': sales_count,
+                'image': image,
+                'available': available,
+                'is_recommended': is_recommended,
+                'is_spicy': is_spicy
+            }
+            reason = request.form.get('change_reason', '')
+            change_request = RestaurantChangeRequest(
+                merchant_id=current_user.id,
+                request_type='dish_add',
+                restaurant_id=restaurant_id,
+                change_data=json.dumps(change_data, ensure_ascii=False),
+                reason=reason
+            )
+            db.session.add(change_request)
+            db.session.commit()
+            flash('菜品添加申请已提交，等待管理员审核')
+            return redirect(url_for('restaurant.merchant_dashboard'))
 
     # 获取所有餐厅和分类
-    restaurants = Restaurant.query.all()
+    if current_user.role == 'admin':
+        restaurants = Restaurant.query.all()
+    else:
+        restaurants = Restaurant.query.filter_by(id=current_user.restaurant_id).all()
+    
     categories = Category.query.all()
     
     return render_template('dish/add.html',
@@ -92,7 +133,12 @@ def add_dish():
 def edit_dish(dish_id):
     dish = Dish.query.get_or_404(dish_id)
 
-    if current_user.role != 'admin':
+    # 权限检查
+    if current_user.role == 'admin':
+        pass
+    elif current_user.role == 'merchant' and current_user.restaurant_id == dish.restaurant_id:
+        pass
+    else:
         flash('权限不足')
         return redirect(url_for('dish.list_dishes'))
 
@@ -100,50 +146,67 @@ def edit_dish(dish_id):
         # 确保图片目录存在
         create_image_directories()
         
-        # 基本信息
-        dish.name = request.form['name']
-        dish.price = float(request.form['price'])
-        dish.description = request.form.get('description', '')
-        dish.restaurant_id = request.form.get('restaurant_id', type=int)
-        dish.category_id = request.form.get('category_id', type=int) or None
-        dish.ingredients = request.form.get('ingredients', '')
+        # 准备修改数据
+        change_data = {
+            'name': request.form['name'],
+            'price': float(request.form['price']),
+            'description': request.form.get('description', ''),
+            'category_id': request.form.get('category_id', type=int) or None,
+            'ingredients': request.form.get('ingredients', ''),
+            'original_price': float(request.form.get('original_price') or 0) or None,
+            'discount_rate': float(request.form.get('discount_rate') or 0) or None,
+            'rating': float(request.form.get('rating', 4.5)),
+            'sales_count': int(request.form.get('sales_count', 0)),
+            'available': request.form.get('available') == 'on',
+            'is_recommended': request.form.get('is_recommended') == 'on',
+            'is_spicy': request.form.get('is_spicy') == 'on'
+        }
         
-        # 价格信息
-        dish.original_price = float(request.form.get('original_price') or 0) or None
-        dish.discount_rate = float(request.form.get('discount_rate') or 0) or None
-        
-        # 其他信息
-        dish.rating = float(request.form.get('rating', 4.5))
-        dish.sales_count = int(request.form.get('sales_count', 0))
-        
-        # 处理菜品图片上传
+        # 处理图片上传（商家管理员也需要上传图片）
         image_file = request.files.get('image_file')
         if image_file and image_file.filename:
-            # 删除旧的图片文件
-            if dish.image and not dish.image.startswith('http'):
-                delete_image_file(dish.image)
-            
-            # 保存新的图片
             new_image_path = save_uploaded_image(image_file, 'dishes', max_size=(600, 400))
             if new_image_path:
-                dish.image = new_image_path
-            else:
-                flash('菜品图片上传失败，请检查文件格式')
+                change_data['image'] = new_image_path
         elif request.form.get('image_url'):
-            # 如果没有上传文件但有URL，使用URL
-            dish.image = request.form.get('image_url', '')
+            change_data['image'] = request.form.get('image_url', '')
         
-        # 状态设置
-        dish.available = request.form.get('available') == 'on'
-        dish.is_recommended = request.form.get('is_recommended') == 'on'
-        dish.is_spicy = request.form.get('is_spicy') == 'on'
+        if current_user.role == 'admin':
+            # 管理员直接修改
+            # 如果有新图片，删除旧图片
+            if 'image' in change_data and change_data['image'] != dish.image:
+                if dish.image and not dish.image.startswith('http'):
+                    delete_image_file(dish.image)
+            
+            # 应用所有修改
+            for key, value in change_data.items():
+                setattr(dish, key, value)
 
-        db.session.commit()
-        flash('菜品修改成功')
-        return redirect(url_for('dish.admin_dishes'))
+            db.session.commit()
+            flash('菜品修改成功')
+            return redirect(url_for('dish.admin_dishes'))
+        else:
+            # 商家管理员提交审核
+            reason = request.form.get('change_reason', '')
+            change_request = RestaurantChangeRequest(
+                merchant_id=current_user.id,
+                request_type='dish_edit',
+                restaurant_id=dish.restaurant_id,
+                dish_id=dish_id,
+                change_data=json.dumps(change_data, ensure_ascii=False),
+                reason=reason
+            )
+            db.session.add(change_request)
+            db.session.commit()
+            flash('菜品修改申请已提交，等待管理员审核')
+            return redirect(url_for('restaurant.merchant_dashboard'))
 
     # 获取所有餐厅和分类
-    restaurants = Restaurant.query.all()
+    if current_user.role == 'admin':
+        restaurants = Restaurant.query.all()
+    else:
+        restaurants = Restaurant.query.filter_by(id=current_user.restaurant_id).all()
+    
     categories = Category.query.all()
     
     return render_template('dish/edit.html', 
@@ -154,33 +217,54 @@ def edit_dish(dish_id):
 @dish_bp.route('/delete/<int:dish_id>')
 @login_required
 def delete_dish(dish_id):
-    if current_user.role != 'admin':
+    dish = Dish.query.get_or_404(dish_id)
+    
+    # 权限检查
+    if current_user.role == 'admin':
+        pass
+    elif current_user.role == 'merchant' and current_user.restaurant_id == dish.restaurant_id:
+        pass
+    else:
         flash('权限不足')
         return redirect(url_for('dish.list_dishes'))
 
-    dish = Dish.query.get_or_404(dish_id)
-    
     # 检查是否有关联的购物车项
     cart_items_count = dish.cart_items.count()
     if cart_items_count > 0:
         flash(f'无法删除：该菜品在 {cart_items_count} 个购物车中，请先清理相关购物车项', 'danger')
-        return redirect(url_for('dish.admin_dishes'))
+        return redirect(url_for('dish.admin_dishes') if current_user.role == 'admin' else url_for('restaurant.merchant_dashboard'))
     
     # 检查是否有关联的订单项
     order_items_count = dish.order_items.count()
     if order_items_count > 0:
         flash(f'无法删除：该菜品已有 {order_items_count} 个订单记录，建议使用下架功能而不是删除', 'danger')
-        return redirect(url_for('dish.admin_dishes'))
+        return redirect(url_for('dish.admin_dishes') if current_user.role == 'admin' else url_for('restaurant.merchant_dashboard'))
     
-    try:
-        db.session.delete(dish)
+    if current_user.role == 'admin':
+        # 管理员直接删除
+        try:
+            db.session.delete(dish)
+            db.session.commit()
+            flash('菜品已删除', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('删除失败，请联系系统管理员', 'danger')
+        return redirect(url_for('dish.admin_dishes'))
+    else:
+        # 商家管理员提交删除审核
+        reason = f'删除菜品：{dish.name}'
+        change_request = RestaurantChangeRequest(
+            merchant_id=current_user.id,
+            request_type='dish_delete',
+            restaurant_id=dish.restaurant_id,
+            dish_id=dish_id,
+            change_data=json.dumps({'dish_id': dish_id}),
+            reason=reason
+        )
+        db.session.add(change_request)
         db.session.commit()
-        flash('菜品已删除', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('删除失败，请联系系统管理员', 'danger')
-        
-    return redirect(url_for('dish.admin_dishes'))
+        flash('菜品删除申请已提交，等待管理员审核')
+        return redirect(url_for('restaurant.merchant_dashboard'))
 
 @dish_bp.route('/admin')
 @login_required
@@ -265,3 +349,25 @@ def force_delete_dish(dish_id):
         flash('强制删除失败，请联系系统管理员', 'danger')
         
     return redirect(url_for('dish.admin_dishes'))
+
+@dish_bp.route('/merchant/<int:dish_id>/toggle_available', methods=['POST'])
+@login_required
+def merchant_toggle_available(dish_id):
+    """商家管理员切换菜品上下架状态"""
+    dish = Dish.query.get_or_404(dish_id)
+    
+    # 权限检查：只能操作自己商家的菜品
+    if current_user.role != 'merchant' or current_user.restaurant_id != dish.restaurant_id:
+        return jsonify({'success': False, 'message': '权限不足'})
+    
+    data = request.get_json()
+    new_status = data.get('available')
+    
+    if new_status is None:
+        return jsonify({'success': False, 'message': '无效的状态'})
+    
+    dish.available = new_status
+    db.session.commit()
+    
+    status_text = '已上架' if new_status else '已下架'
+    return jsonify({'success': True, 'message': f'菜品{status_text}'})

@@ -3,112 +3,157 @@
 {% block title %}我的订单 - 美团外卖{% endblock %}
 
 {% block content %}
-<div class="order-list-container">
-    <div class="container">
-        <div class="page-header">
-            <h2><i class="fas fa-receipt me-2"></i>{{ '所有订单' if current_user.role == 'admin' else '我的订单' }}</h2>
+<div class="order-list-page">
+    <div class="container py-4">
+        <!-- 页面标题 -->
+        <div class="page-title-section mb-4">
+            <h2 class="page-title">
+                <i class="fas fa-receipt me-2"></i>
+                {{ '所有订单' if current_user.role == 'admin' else '我的订单' }}
+            </h2>
+            <p class="text-muted mb-0">
+                {{ '查看和管理所有用户订单' if current_user.role == 'admin' else '查看您的订单详情和配送状态' }}
+            </p>
         </div>
         
         {% if orders %}
-            <div class="orders-wrapper">
-        {% for order in orders %}
-                <div class="order-card mb-4">
-                    <div class="order-header">
-                        <div class="order-info">
-                            <h5 class="mb-1">
-                                <i class="fas fa-store me-2"></i>{{ order.restaurant.name }}
-                                <span class="order-no ms-3 text-muted">订单号：{{ order.order_no }}</span>
-                            </h5>
-                            <p class="mb-0 text-muted">
-                                <i class="fas fa-clock me-1"></i>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}
-                            </p>
+            <div class="orders-list">
+                {% for order in orders %}
+                <div class="order-card {% if order.status == 'cancelled' %}order-cancelled{% endif %}" data-order-id="{{ order.id }}">
+                    <!-- 订单头部 -->
+                    <div class="order-card-header">
+                        <div class="header-left">
+                            <div class="restaurant-info">
+                                <i class="fas fa-store text-warning me-2"></i>
+                                <span class="restaurant-name">{{ order.restaurant.name }}</span>
+                            </div>
+                            <div class="order-meta">
+                                <span class="order-number">
+                                    <i class="fas fa-hashtag me-1"></i>{{ order.order_no }}
+                                </span>
+                                <span class="order-time">
+                                    <i class="far fa-clock me-1"></i>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="order-status">
-                            <span class="badge badge-status badge-{{ order.status }}">
-                                {% if order.status == 'pending' %}待确认
-                                {% elif order.status == 'confirmed' %}已确认
-                                {% elif order.status == 'preparing' %}准备中
-                                {% elif order.status == 'delivering' %}配送中
-                                {% elif order.status == 'completed' %}已完成
-                                {% elif order.status == 'cancelled' %}已取消
-                                {% else %}{{ order.status }}{% endif %}
-                            </span>
+                        <div class="header-right">
+                            {% if order.status == 'pending' %}
+                                <span class="status-badge status-pending">
+                                    <i class="fas fa-hourglass-half"></i> 待确认
+                                </span>
+                            {% elif order.status == 'confirmed' %}
+                                <span class="status-badge status-confirmed">
+                                    <i class="fas fa-check-circle"></i> 已确认
+                                </span>
+                            {% elif order.status == 'preparing' %}
+                                <span class="status-badge status-preparing">
+                                    <i class="fas fa-utensils"></i> 准备中
+                                </span>
+                            {% elif order.status == 'delivering' %}
+                                <span class="status-badge status-delivering">
+                                    <i class="fas fa-shipping-fast"></i> 配送中
+                                </span>
+                            {% elif order.status == 'completed' %}
+                                <span class="status-badge status-completed">
+                                    <i class="fas fa-check-double"></i> 已完成
+                                </span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="status-badge status-cancelled">
+                                    <i class="fas fa-times-circle"></i> 已取消
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-unknown">{{ order.status }}</span>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <div class="order-body">
-                        <!-- 订单商品列表 -->
-                        <div class="order-items">
+                    <!-- 订单内容 -->
+                    <div class="order-card-body">
+                        <!-- 菜品列表 -->
+                        <div class="dishes-section">
                             {% for item in order.order_items %}
-                            <div class="order-item">
-                                <img src="{{ item.dish.image or '/static/images/dishes/default.jpg' }}" 
-                                     alt="{{ item.dish.name }}" class="item-image">
-                                <div class="item-info">
-                                    <h6 class="mb-1">{{ item.dish.name }}</h6>
-                                    <p class="mb-0 text-muted">¥{{ item.price }} × {{ item.quantity }}</p>
+                            <div class="dish-item">
+                                <div class="dish-image-wrapper">
+                                    <img src="{{ item.dish.image or '/static/images/dishes/default.jpg' }}" 
+                                         alt="{{ item.dish.name }}" 
+                                         class="dish-image"
+                                         onerror="this.src='/static/images/dishes/default.jpg'">
                                 </div>
-                                <div class="item-subtotal">
-                                    ¥{{ item.subtotal }}
+                                <div class="dish-details">
+                                    <h6 class="dish-name">{{ item.dish.name }}</h6>
+                                    <p class="dish-specs">¥{{ "%.2f"|format(item.price) }} × {{ item.quantity }}</p>
+                                </div>
+                                <div class="dish-subtotal">
+                                    <span class="amount">¥{{ "%.2f"|format(item.subtotal) }}</span>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                         
                         <!-- 配送信息 -->
-                        <div class="delivery-info mt-3">
-                            <p class="mb-1">
-                                <i class="fas fa-user me-2"></i>{{ order.delivery_name }} {{ order.delivery_phone }}
-                            </p>
-                            <p class="mb-0">
-                                <i class="fas fa-map-marker-alt me-2"></i>{{ order.delivery_address }}
-                            </p>
+                        <div class="delivery-section">
+                            <div class="section-title">
+                                <i class="fas fa-map-marker-alt text-danger me-2"></i>配送信息
+                            </div>
+                            <div class="delivery-details">
+                                <div class="delivery-row">
+                                    <span class="label">收货人：</span>
+                                    <span class="value">{{ order.delivery_name }} {{ order.delivery_phone }}</span>
+                                </div>
+                                <div class="delivery-row">
+                                    <span class="label">地址：</span>
+                                    <span class="value">{{ order.delivery_address }}</span>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- 价格信息 -->
-                        <div class="price-summary">
+                        <!-- 价格明细 -->
+                        <div class="price-section">
                             <div class="price-row">
                                 <span>商品小计</span>
-                                <span>¥{{ order.subtotal }}</span>
+                                <span>¥{{ "%.2f"|format(order.subtotal) }}</span>
                             </div>
                             <div class="price-row">
                                 <span>配送费</span>
-                                <span>¥{{ order.delivery_fee }}</span>
+                                <span>¥{{ "%.2f"|format(order.delivery_fee) }}</span>
                             </div>
-                            <div class="price-row total">
-                                <strong>实付款</strong>
-                                <strong class="text-danger">¥{{ order.total_amount }}</strong>
+                            <div class="price-row price-total">
+                                <span><strong>实付金额</strong></span>
+                                <span class="total-amount"><strong>¥{{ "%.2f"|format(order.total_amount) }}</strong></span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="order-footer">
-                        <div class="order-actions">
+                    <!-- 订单操作 -->
+                    <div class="order-card-footer">
+                        <div class="actions-left">
                             <a href="{{ url_for('order.order_detail', order_id=order.id) }}" 
-                               class="btn btn-sm btn-outline-primary">
+                               class="btn btn-outline-primary btn-sm">
                                 <i class="fas fa-info-circle me-1"></i>订单详情
                             </a>
-                            
-            {% if current_user.role == 'admin' %}
+                        </div>
+                        <div class="actions-right">
+                            {% if current_user.role == 'admin' %}
                                 <!-- 管理员操作 -->
-                                <div class="dropdown d-inline-block">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                            type="button" data-bs-toggle="dropdown">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            data-bs-toggle="dropdown">
                                         <i class="fas fa-cog me-1"></i>状态管理
                                     </button>
-                                    <ul class="dropdown-menu">
-                                        {% for status, label in [
-                                            ('confirmed', '确认订单'),
-                                            ('preparing', '开始准备'),
-                                            ('delivering', '开始配送'),
-                                            ('completed', '完成订单'),
-                                            ('cancelled', '取消订单')
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        {% for status, label, icon in [
+                                            ('confirmed', '确认订单', 'check'),
+                                            ('preparing', '开始准备', 'utensils'),
+                                            ('delivering', '开始配送', 'shipping-fast'),
+                                            ('completed', '完成订单', 'check-double'),
+                                            ('cancelled', '取消订单', 'times')
                                         ] %}
                                             {% if status != order.status %}
                                             <li>
-                <form method="post" action="{{ url_for('order.update_status', order_id=order.id) }}">
+                                                <form method="post" action="{{ url_for('order.update_status', order_id=order.id) }}" style="display:inline;">
                                                     <input type="hidden" name="status" value="{{ status }}">
                                                     <button type="submit" class="dropdown-item">
-                                                        {{ label }}
+                                                        <i class="fas fa-{{ icon }} me-2"></i>{{ label }}
                                                     </button>
                                                 </form>
                                             </li>
@@ -117,190 +162,466 @@
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
                                             <form method="post" action="{{ url_for('order.admin_delete_order', order_id=order.id) }}"
-                                                  onsubmit="return confirm('确认删除订单 {{ order.order_no }}？\n\n⚠️ 此操作不可恢复！\n订单及其所有相关数据将被永久删除。')">
+                                                  onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">
                                                 <button type="submit" class="dropdown-item text-danger">
-                                                    <i class="fas fa-trash me-1"></i>删除订单
+                                                    <i class="fas fa-trash me-2"></i>删除订单
                                                 </button>
-                </form>
+                                            </form>
                                         </li>
                                     </ul>
                                 </div>
                             {% else %}
-                                <!-- 用户操作 -->
+                                <!-- 普通用户操作 -->
                                 {% if order.status == 'pending' %}
                                     <a href="{{ url_for('order.cancel_order', order_id=order.id) }}" 
-                                       class="btn btn-sm btn-outline-danger"
+                                       class="btn btn-outline-danger btn-sm"
                                        onclick="return confirm('确认取消订单？')">
                                         <i class="fas fa-times me-1"></i>取消订单
                                     </a>
-                                {% endif %}
-                                
-                                {% if order.status == 'completed' %}
+                                {% elif order.status == 'completed' %}
                                     <a href="{{ url_for('restaurant.restaurant_detail', restaurant_id=order.restaurant_id) }}" 
-                                       class="btn btn-sm btn-warning">
+                                       class="btn btn-warning btn-sm">
                                         <i class="fas fa-redo me-1"></i>再来一单
                                     </a>
+                                    <form method="post" action="{{ url_for('order.user_delete_order', order_id=order.id) }}"
+                                          onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-trash me-1"></i>删除
+                                        </button>
+                                    </form>
+                                {% elif order.status == 'cancelled' %}
+                                    <span class="text-muted me-2">订单已取消</span>
+                                    <form method="post" action="{{ url_for('order.user_delete_order', order_id=order.id) }}"
+                                          onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-trash me-1"></i>删除
+                                        </button>
+                                    </form>
                                 {% endif %}
-            {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-        {% endfor %}
+                {% endfor %}
             </div>
         {% else %}
-            <div class="empty-orders">
-                <div class="text-center py-5">
-                    <i class="fas fa-clipboard-list fa-5x text-muted mb-4"></i>
-                    <h3 class="text-muted">{{ '暂无订单记录' if current_user.role == 'admin' else '还没有订单' }}</h3>
-                    <p class="text-muted">{{ '等待用户下单...' if current_user.role == 'admin' else '去看看有什么好吃的吧！' }}</p>
-                    {% if current_user.role != 'admin' %}
-                        <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-warning btn-lg">
-                            <i class="fas fa-utensils me-2"></i>去点餐
-                        </a>
-                    {% endif %}
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-inbox"></i>
                 </div>
+                <h3 class="empty-title">
+                    {{ '暂无订单记录' if current_user.role == 'admin' else '还没有订单哦' }}
+                </h3>
+                <p class="empty-description">
+                    {{ '等待用户下单...' if current_user.role == 'admin' else '去看看有什么好吃的吧！' }}
+                </p>
+                {% if current_user.role != 'admin' %}
+                    <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-warning btn-lg mt-3">
+                        <i class="fas fa-utensils me-2"></i>开始点餐
+                    </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>
 </div>
 
 <style>
-.order-list-container {
-    background-color: #f8f9fa;
+/* 整体页面样式 */
+.order-list-page {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
     min-height: 100vh;
-    padding: 20px 0;
+    padding-bottom: 40px;
 }
 
-.page-header {
+/* 页面标题区域 */
+.page-title-section {
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
+.page-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 28px;
+}
+
+/* 订单卡片 */
 .order-card {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    margin-bottom: 20px;
     overflow: hidden;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
 }
 
-.order-header {
-    padding: 20px;
-    border-bottom: 1px solid #eee;
+.order-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.order-card.order-cancelled {
+    opacity: 0.85;
+    border-color: #dee2e6;
+}
+
+/* 订单头部 */
+.order-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #FFD900 0%, #FF8800 100%);
+    color: #333;
 }
 
-.order-no {
-    font-size: 14px;
-    font-weight: normal;
+.order-cancelled .order-card-header {
+    background: linear-gradient(135deg, #868e96 0%, #6c757d 100%);
+    color: white;
 }
 
-.badge-status {
-    padding: 6px 12px;
-    font-size: 14px;
-    font-weight: normal;
-}
-
-.badge-pending { background-color: #ffc107; color: #333; }
-.badge-confirmed { background-color: #17a2b8; color: white; }
-.badge-preparing { background-color: #6f42c1; color: white; }
-.badge-delivering { background-color: #fd7e14; color: white; }
-.badge-completed { background-color: #28a745; color: white; }
-.badge-cancelled { background-color: #dc3545; color: white; }
-
-.order-body {
-    padding: 20px;
-}
-
-.order-items {
-    border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-}
-
-.order-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.order-item:last-child {
-    margin-bottom: 0;
-}
-
-.item-image {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-right: 15px;
-}
-
-.item-info {
+.header-left {
     flex: 1;
 }
 
-.item-info h6 {
-    margin: 0;
-    font-size: 16px;
+.restaurant-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
-.item-subtotal {
-    font-weight: bold;
+.restaurant-name {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.order-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    opacity: 0.95;
+}
+
+.order-number, .order-time {
+    display: flex;
+    align-items: center;
+}
+
+/* 状态徽章 */
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-confirmed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-preparing {
+    background: #e7d6ff;
+    color: #5a189a;
+}
+
+.status-delivering {
+    background: #ffe5cc;
+    color: #cc5500;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-unknown {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+/* 订单内容 */
+.order-card-body {
+    padding: 24px;
+}
+
+/* 菜品区域 */
+.dishes-section {
+    border-bottom: 2px dashed #e9ecef;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+.dish-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.dish-item:hover {
+    background: #f8f9fa;
+}
+
+.dish-image-wrapper {
+    flex-shrink: 0;
+}
+
+.dish-image {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid #f8f9fa;
+}
+
+.dish-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.dish-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 6px 0;
+}
+
+.dish-specs {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0;
+}
+
+.dish-subtotal {
+    flex-shrink: 0;
+}
+
+.dish-subtotal .amount {
+    font-size: 18px;
+    font-weight: 700;
     color: #ff6b35;
 }
 
-.delivery-info {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
+/* 配送信息区域 */
+.delivery-section {
+    background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
 }
 
-.price-summary {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
+.section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+}
+
+.delivery-row {
+    display: flex;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.delivery-row:last-child {
+    margin-bottom: 0;
+}
+
+.delivery-row .label {
+    color: #6c757d;
+    min-width: 70px;
+    flex-shrink: 0;
+}
+
+.delivery-row .value {
+    color: #2c3e50;
+    flex: 1;
+}
+
+/* 价格区域 */
+.price-section {
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
 }
 
 .price-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #6c757d;
 }
 
-.price-row.total {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-    font-size: 18px;
+.price-row:last-child {
+    margin-bottom: 0;
 }
 
-.order-footer {
-    padding: 15px 20px;
+.price-row.price-total {
+    padding-top: 12px;
+    border-top: 2px solid #dee2e6;
+    margin-top: 8px;
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+.total-amount {
+    font-size: 22px;
+    color: #ff6b35;
+}
+
+/* 订单底部操作栏 */
+.order-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
     background: #f8f9fa;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #e9ecef;
 }
 
-.empty-orders {
+.actions-left,
+.actions-right {
+    display: flex;
+    gap: 10px;
+}
+
+/* 按钮样式增强 */
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+}
+
+.btn-outline-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+}
+
+.btn-warning:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+/* 空状态 */
+.empty-state {
     background: white;
-    border-radius: 12px;
-    padding: 40px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 80px 40px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
+.empty-icon {
+    font-size: 80px;
+    color: #dee2e6;
+    margin-bottom: 24px;
+}
+
+.empty-title {
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.empty-description {
+    color: #adb5bd;
+    margin-bottom: 0;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
-    .order-header {
+    .order-card-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 12px;
     }
     
-    .order-status {
-        margin-top: 10px;
+    .order-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .dish-item {
+        flex-wrap: wrap;
+    }
+    
+    .dish-subtotal {
+        width: 100%;
+        text-align: right;
+        margin-top: 8px;
+    }
+    
+    .order-card-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .actions-left,
+    .actions-right {
+        width: 100%;
+        justify-content: center;
     }
 }
+
+/* 下拉菜单美化 */
+.dropdown-menu {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+}
+
+.dropdown-item {
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 4px;
+}
+
+.dropdown-item:hover {
+    background: #f8f9fa;
+}
+
+.dropdown-item:last-child {
+    margin-bottom: 0;
+}
 </style>
+
+<script>
+// 添加一些交互效果
+document.addEventListener('DOMContentLoaded', function() {
+    // 为取消的订单添加视觉反馈
+    document.querySelectorAll('.order-cancelled').forEach(function(card) {
+        card.style.position = 'relative';
+    });
+});
+</script>
 {% endblock %}

@@ -172,20 +172,6 @@
             font-size: 18px;
         }
         
-        .forgot-link {
-            position: absolute;
-            right: 17px;
-            top: 16px;
-            color: #ff6b35;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        
-        .forgot-link:hover {
-            text-decoration: underline;
-        }
-        
-        
         .btn-submit {
             width: 100%;
             height: 50px;
@@ -203,91 +189,6 @@
             background: #ffed4e;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(255, 217, 0, 0.4);
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 21px 0;
-            color: #ccc;
-            font-size: 14px;
-            position: relative;
-        }
-        
-        .divider::before,
-        .divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 42%;
-            height: 1px;
-            background: #e8e8e8;
-        }
-        
-        .divider::before {
-            left: 0;
-        }
-        
-        .divider::after {
-            right: 0;
-        }
-        
-        .quick-login {
-            display: flex;
-            justify-content: center;
-            gap: 42px;
-            align-items: center;
-        }
-        
-        .quick-login-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            color: #666;
-            transition: all 0.3s;
-        }
-        
-        .quick-login-item:hover {
-            color: #ff6b35;
-        }
-        
-        .quick-login-icon {
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            color: inherit;
-        }
-        
-        .quick-login-text {
-            font-size: 13px;
-            color: inherit;
-        }
-        
-        .test-accounts {
-            margin-top: 21px;
-            padding: 14px 18px;
-            background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%);
-            border-radius: 8px;
-            font-size: 13px;
-            color: #8b5a00;
-            border: 1px solid #ffd699;
-        }
-        
-        .test-accounts strong {
-            color: #ff8800;
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .test-accounts p {
-            margin: 4px 0;
-            line-height: 1.8;
-            color: #996600;
         }
         
         /* 装饰元素 */
@@ -402,34 +303,10 @@
                                name="password" 
                                placeholder="输入密码" 
                                required>
-                        <a href="#" class="forgot-link">忘记密码</a>
                     </div>
                     
                     <button type="submit" class="btn-submit">登录</button>
                 </form>
-                
-                <div class="divider">或</div>
-                
-                <div class="quick-login">
-                    <a href="#" class="quick-login-item" title="微信登录">
-                        <div class="quick-login-icon">
-                            <i class="fab fa-weixin" style="color: #07c160;"></i>
-                        </div>
-                        <div class="quick-login-text">微信登录</div>
-                    </a>
-                    <a href="#" class="quick-login-item" title="企业号">
-                        <div class="quick-login-icon">
-                            <i class="fas fa-building" style="color: #4a90e2;"></i>
-                        </div>
-                        <div class="quick-login-text">企业账号</div>
-                    </a>
-                </div>
-                
-                <div class="test-accounts">
-                    <strong>💡 测试账号</strong>
-                    <p>管理员：admin / admin123</p>
-                    <p>普通用户：testuser / 123456</p>
-                </div>
             </div>
         </div>
     </div>

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}申请管理商家{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-success bg-gradient text-white fw-bold">
+          <i class="fas fa-store me-2"></i>申请管理商家
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-4">
+            您可以选择申请管理现有商家，或者创建新的商家并申请管理权限。
+          </p>
+          
+          <form method="post">
+            <div class="mb-4">
+              <label class="form-label fw-bold">申请类型</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="application_type" id="type_existing" value="existing" checked>
+                <label class="form-check-label" for="type_existing">
+                  <i class="fas fa-building text-primary"></i> 申请管理现有商家
+                  <small class="text-muted d-block">从已有的商家中选择一个申请管理权限</small>
+                </label>
+              </div>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="radio" name="application_type" id="type_new" value="new">
+                <label class="form-check-label" for="type_new">
+                  <i class="fas fa-plus-circle text-success"></i> 创建新商家
+                  <small class="text-muted d-block">创建一个新的商家并申请管理权限</small>
+                </label>
+              </div>
+            </div>
+            
+            <!-- 现有商家选择 -->
+            <div id="existing_restaurant_section" class="mb-3">
+              <label for="restaurant_id" class="form-label">选择商家</label>
+              <select class="form-select" id="restaurant_id" name="restaurant_id">
+                <option value="">请选择商家</option>
+                {% for restaurant in restaurants %}
+                <option value="{{ restaurant.id }}">{{ restaurant.name }} - {{ restaurant.address or '地址未设置' }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <!-- 新商家信息 -->
+            <div id="new_restaurant_section" style="display:none;">
+              <div class="mb-3">
+                <label for="restaurant_name" class="form-label">商家名称 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="restaurant_name" name="restaurant_name" maxlength="100">
+              </div>
+              
+              <div class="mb-3">
+                <label for="restaurant_description" class="form-label">商家简介</label>
+                <textarea class="form-control" id="restaurant_description" name="restaurant_description" rows="3" maxlength="500"></textarea>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="restaurant_address" class="form-label">商家地址</label>
+                  <input type="text" class="form-control" id="restaurant_address" name="restaurant_address" maxlength="200">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                  <label for="restaurant_phone" class="form-label">联系电话</label>
+                  <input type="tel" class="form-control" id="restaurant_phone" name="restaurant_phone" maxlength="20">
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="cuisine_type" class="form-label">菜系类型</label>
+                <select class="form-select" id="cuisine_type" name="cuisine_type">
+                  <option value="">请选择菜系</option>
+                  <option value="中餐">中餐</option>
+                  <option value="西餐">西餐</option>
+                  <option value="日料">日料</option>
+                  <option value="韩餐">韩餐</option>
+                  <option value="快餐">快餐</option>
+                  <option value="甜品">甜品</option>
+                  <option value="饮品">饮品</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="reason" class="form-label">申请理由</label>
+              <textarea class="form-control" id="reason" name="reason" rows="4" maxlength="300" placeholder="请说明您申请管理该商家的理由" required></textarea>
+              <div class="form-text text-end"><span id="char-count">0</span>/300</div>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-success btn-lg">提交申请</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      {% if applications %}
+      <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-secondary text-white fw-bold">
+          <i class="fas fa-history me-2"></i>我的申请记录
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>申请类型</th>
+                  <th>商家名称</th>
+                  <th>申请理由</th>
+                  <th>申请时间</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for app in applications %}
+                <tr>
+                  <td>
+                    {% if app.application_type == 'existing' %}
+                      <span class="badge bg-primary">现有商家</span>
+                    {% else %}
+                      <span class="badge bg-success">新建商家</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if app.restaurant %}
+                      {{ app.restaurant.name }}
+                    {% else %}
+                      {{ app.restaurant_name or '未知' }}
+                    {% endif %}
+                  </td>
+                  <td>{{ app.reason or '无' }}</td>
+                  <td>{{ app.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    {% if app.status == 'pending' %}
+                      <span class="badge bg-warning">待审核</span>
+                    {% elif app.status == 'approved' %}
+                      <span class="badge bg-success">已通过</span>
+                    {% elif app.status == 'rejected' %}
+                      <span class="badge bg-danger">已拒绝</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // 申请类型切换
+  const typeExisting = document.getElementById('type_existing');
+  const typeNew = document.getElementById('type_new');
+  const existingSection = document.getElementById('existing_restaurant_section');
+  const newSection = document.getElementById('new_restaurant_section');
+  const restaurantIdSelect = document.getElementById('restaurant_id');
+  const restaurantNameInput = document.getElementById('restaurant_name');
+  
+  function updateSections() {
+    if (typeExisting.checked) {
+      existingSection.style.display = 'block';
+      newSection.style.display = 'none';
+      restaurantIdSelect.required = true;
+      restaurantNameInput.required = false;
+    } else {
+      existingSection.style.display = 'none';
+      newSection.style.display = 'block';
+      restaurantIdSelect.required = false;
+      restaurantNameInput.required = true;
+    }
+  }
+  
+  typeExisting.addEventListener('change', updateSections);
+  typeNew.addEventListener('change', updateSections);
+  
+  // 字数统计
+  const reasonInput = document.getElementById('reason');
+  const charCount = document.getElementById('char-count');
+  if (reasonInput && charCount) {
+    reasonInput.addEventListener('input', () => {
+      charCount.textContent = reasonInput.value.length;
+    });
+  }
+</script>
+{% endblock %}
+

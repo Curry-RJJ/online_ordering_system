@@ -1,0 +1,894 @@
+{% extends "base.html" %}
+
+{% block title %}商家管理仪表板{% endblock %}
+
+{% block content %}
+<style>
+/* 美团风格的黄橙渐变背景 */
+.merchant-dashboard-container {
+    background: linear-gradient(to bottom, #fff7e6, #ffe8cc);
+    min-height: 100vh;
+    padding: 30px 0;
+}
+
+/* 页面标题 */
+.dashboard-title {
+    background: linear-gradient(135deg, #ffda44 0%, #ffa500 100%);
+    color: #333;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+}
+
+.dashboard-title h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 28px;
+}
+
+/* 商家信息卡片 */
+.restaurant-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 25px;
+    border: none;
+}
+
+.restaurant-card-header {
+    background: linear-gradient(135deg, #ffda44 0%, #ffc107 100%);
+    color: #333;
+    padding: 20px 25px;
+    border-bottom: none;
+}
+
+.restaurant-card-header h5 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.restaurant-card-body {
+    padding: 30px;
+}
+
+.restaurant-logo {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.restaurant-name {
+    font-size: 26px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.restaurant-description {
+    color: #666;
+    font-size: 15px;
+    margin-bottom: 15px;
+}
+
+.restaurant-info-item {
+    color: #555;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.restaurant-info-item i {
+    color: #ffa500;
+    width: 20px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.status-badge.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.status-badge.inactive {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.status-badge.open {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.status-badge.closed {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+    color: white;
+}
+
+.action-btn-group {
+    margin-top: 20px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    border: none;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.action-btn-primary {
+    background: linear-gradient(135deg, #ffda44 0%, #ffa500 100%);
+    color: #333;
+}
+
+.action-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
+    color: #333;
+}
+
+.action-btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.action-btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    color: white;
+}
+
+.action-btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+    color: white;
+}
+
+.action-btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+    color: white;
+}
+
+/* 统计卡片 */
+.stat-card {
+    background: white !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    padding: 35px 25px !important;
+    text-align: center !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: block !important;
+}
+
+.stat-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 5px !important;
+    background: linear-gradient(90deg, #ffda44 0%, #ffa500 50%, #ff6600 100%) !important;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 8px 30px rgba(255, 165, 0, 0.25) !important;
+}
+
+.stat-icon {
+    font-size: 40px !important;
+    margin-bottom: 15px !important;
+    display: block !important;
+}
+
+.stat-number {
+    font-size: 56px !important;
+    font-weight: 800 !important;
+    margin-bottom: 12px !important;
+    background: linear-gradient(135deg, #ffda44 0%, #ffa500 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    line-height: 1.2 !important;
+    display: block !important;
+}
+
+.stat-label {
+    color: #666 !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    margin-bottom: 20px !important;
+    letter-spacing: 0.5px !important;
+    display: block !important;
+}
+
+.stat-btn {
+    padding: 10px 24px !important;
+    border-radius: 25px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    color: white !important;
+    transition: all 0.3s ease !important;
+    display: inline-block !important;
+    text-decoration: none !important;
+}
+
+.stat-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3) !important;
+    color: white !important;
+}
+
+.stat-btn i {
+    font-size: 14px !important;
+}
+
+/* 菜品管理表格样式 */
+.dishes-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 25px;
+    border: none;
+}
+
+.dishes-card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 20px 25px;
+}
+
+.dishes-card-header h5 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.dishes-table {
+    margin: 0;
+}
+
+.dishes-table thead {
+    background: #f8f9fa;
+}
+
+.dishes-table thead th {
+    border: none;
+    color: #333;
+    font-weight: 700;
+    padding: 15px;
+    font-size: 14px;
+}
+
+.dishes-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.dishes-table tbody tr:hover {
+    background: #fff8e6;
+}
+
+.dishes-table tbody td {
+    vertical-align: middle;
+    padding: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.dish-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dish-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 15px;
+}
+
+.dish-price {
+    color: #ff6600;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.dish-category {
+    color: #666;
+    font-size: 14px;
+}
+
+.dish-sales {
+    color: #ffa500;
+    font-weight: 600;
+}
+
+.dish-status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.dish-status-badge.available {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.dish-status-badge.unavailable {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.dish-action-btn {
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    transition: all 0.2s ease;
+}
+
+.dish-action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.dish-action-btn-toggle {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #333;
+}
+
+.dish-action-btn-edit {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.dish-action-btn-delete {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.empty-dishes {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.empty-dishes i {
+    font-size: 64px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-dishes a {
+    color: #ffa500;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.empty-dishes a:hover {
+    text-decoration: underline;
+}
+
+/* 申请列表样式 */
+.requests-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 25px;
+    border: none;
+}
+
+.requests-card-header-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #333;
+    padding: 20px 25px;
+}
+
+.requests-card-header-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+    padding: 20px 25px;
+}
+
+.requests-card-header h5 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.requests-table {
+    margin: 0;
+}
+
+.requests-table thead {
+    background: #f8f9fa;
+}
+
+.requests-table thead th {
+    border: none;
+    color: #333;
+    font-weight: 700;
+    padding: 15px;
+    font-size: 14px;
+}
+
+.requests-table tbody td {
+    vertical-align: middle;
+    padding: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.request-type-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+.request-type-badge.restaurant-edit {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.request-type-badge.dish-add {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.request-type-badge.dish-edit {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.request-type-badge.dish-delete {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.request-status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.request-status-badge.pending {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #333;
+}
+
+.request-status-badge.approved {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.request-status-badge.rejected {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+</style>
+
+<div class="merchant-dashboard-container">
+    <div class="container">
+        <!-- 页面标题 -->
+        <div class="dashboard-title">
+            <h2><i class="fas fa-store me-3"></i>商家管理仪表板</h2>
+        </div>
+        
+        <!-- 商家信息卡片 -->
+        <div class="restaurant-card">
+            <div class="restaurant-card-header">
+                <h5><i class="fas fa-utensils me-2"></i>我的商家</h5>
+            </div>
+            <div class="restaurant-card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center mb-3 mb-md-0">
+                        {% if restaurant.logo %}
+                            <img src="{{ restaurant.logo }}" class="restaurant-logo" alt="{{ restaurant.name }}">
+                        {% else %}
+                            <img src="/static/images/default_restaurant.jpg" class="restaurant-logo" alt="默认Logo">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-10">
+                        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+                        <p class="restaurant-description">{{ restaurant.description }}</p>
+                        <p class="restaurant-info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <strong>地址：</strong>{{ restaurant.address }}
+                        </p>
+                        <p class="restaurant-info-item">
+                            <i class="fas fa-phone"></i>
+                            <strong>电话：</strong>{{ restaurant.phone }}
+                        </p>
+                        <div class="mb-3">
+                            <span class="status-badge {% if restaurant.is_active %}active{% else %}inactive{% endif %}">
+                                {% if restaurant.is_active %}已上线{% else %}未上线{% endif %}
+                            </span>
+                            <span class="status-badge {% if restaurant.status == 'open' %}open{% elif restaurant.status == 'closed' %}closed{% else %}open{% endif %}">
+                                {% if restaurant.status == 'open' %}
+                                    <i class="fas fa-check-circle me-1"></i>营业中
+                                {% elif restaurant.status == 'closed' %}
+                                    <i class="fas fa-times-circle me-1"></i>已打烊
+                                {% else %}
+                                    <i class="fas fa-clock me-1"></i>繁忙中
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="action-btn-group">
+                            <a href="{{ url_for('order.merchant_manage_orders') }}" class="btn action-btn action-btn-success">
+                                <i class="fas fa-receipt me-2"></i>订单管理
+                            </a>
+                            <a href="{{ url_for('restaurant.edit_restaurant', restaurant_id=restaurant.id) }}" class="btn action-btn action-btn-primary">
+                                <i class="fas fa-edit me-2"></i>修改商家信息
+                            </a>
+                            <button type="button" class="btn action-btn {% if restaurant.status == 'open' %}action-btn-danger{% else %}action-btn-success{% endif %}" 
+                                    onclick="toggleRestaurantStatus('{{ restaurant.id }}', '{{ restaurant.status }}')">
+                                <i class="fas fa-{% if restaurant.status == 'open' %}pause-circle{% else %}play-circle{% endif %} me-2"></i>
+                                {% if restaurant.status == 'open' %}暂停营业{% else %}开始营业{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); padding: 20px 18px; text-align: center; position: relative; overflow: hidden; transition: all 0.3s ease;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #ffda44 0%, #ffa500 100%);"></div>
+                    <div style="color: #ffa500; font-size: 28px; margin-bottom: 8px;">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 5px; color: #ffa500; line-height: 1;">
+                        {{ dishes|length }}
+                    </div>
+                    <div style="color: #999; font-size: 13px; font-weight: 500; margin-bottom: 12px;">
+                        菜品总数
+                    </div>
+                    <a href="{{ url_for('dish.add_dish') }}" style="padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: none; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; display: inline-block; text-decoration: none;">
+                        <i class="fas fa-plus me-1"></i>添加菜品
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); padding: 20px 18px; text-align: center; position: relative; overflow: hidden; transition: all 0.3s ease;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);"></div>
+                    <div style="color: #ffc107; font-size: 28px; margin-bottom: 8px;">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 5px; color: #ffc107; line-height: 1;">
+                        {{ pending_requests|length }}
+                    </div>
+                    <div style="color: #999; font-size: 13px; font-weight: 500; margin-bottom: 12px;">
+                        待审核申请
+                    </div>
+                    <div style="height: 32px;"></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); padding: 20px 18px; text-align: center; position: relative; overflow: hidden; transition: all 0.3s ease;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #17a2b8 0%, #00d4ff 100%);"></div>
+                    <div style="color: #17a2b8; font-size: 28px; margin-bottom: 8px;">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 5px; color: #17a2b8; line-height: 1;">
+                        {{ all_requests|length }}
+                    </div>
+                    <div style="color: #999; font-size: 13px; font-weight: 500; margin-bottom: 12px;">
+                        申请总数
+                    </div>
+                    <div style="height: 32px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 菜品列表 -->
+        <div class="dishes-card">
+            <div class="dishes-card-header">
+                <h5><i class="fas fa-utensils me-2"></i>菜品管理</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if dishes %}
+                    <div class="table-responsive">
+                        <table class="table dishes-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>图片</th>
+                                    <th>名称</th>
+                                    <th>价格</th>
+                                    <th>分类</th>
+                                    <th>销量</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dish in dishes %}
+                                <tr>
+                                    <td>
+                                        {% if dish.image %}
+                                            <img src="{{ dish.image }}" class="dish-image" alt="{{ dish.name }}">
+                                        {% else %}
+                                            <img src="/static/images/dishes/default.jpg" class="dish-image" alt="默认图片">
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="dish-name">{{ dish.name }}</span></td>
+                                    <td><span class="dish-price">¥{{ "%.2f"|format(dish.price) }}</span></td>
+                                    <td><span class="dish-category">{{ dish.category.name if dish.category else '未分类' }}</span></td>
+                                    <td><span class="dish-sales">{{ dish.sales_count }}</span></td>
+                                    <td>
+                                        <span class="dish-status-badge {% if dish.available %}available{% else %}unavailable{% endif %}">
+                                            {% if dish.available %}
+                                                <i class="fas fa-check-circle me-1"></i>上架
+                                            {% else %}
+                                                <i class="fas fa-times-circle me-1"></i>下架
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm dish-action-btn dish-action-btn-toggle" 
+                                                onclick="toggleDishStatus({{ dish.id }}, {{ dish.available|lower }})">
+                                            <i class="fas fa-{% if dish.available %}eye-slash{% else %}eye{% endif %} me-1"></i>
+                                            {% if dish.available %}下架{% else %}上架{% endif %}
+                                        </button>
+                                        <a href="{{ url_for('dish.edit_dish', dish_id=dish.id) }}" class="btn btn-sm dish-action-btn dish-action-btn-edit">
+                                            <i class="fas fa-edit me-1"></i>编辑
+                                        </a>
+                                        <a href="{{ url_for('dish.delete_dish', dish_id=dish.id) }}" 
+                                           class="btn btn-sm dish-action-btn dish-action-btn-delete" 
+                                           onclick="return confirm('确认要删除这个菜品吗？')">
+                                            <i class="fas fa-trash me-1"></i>删除
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-dishes">
+                        <i class="fas fa-utensils"></i>
+                        <p>还没有菜品，<a href="{{ url_for('dish.add_dish') }}">立即添加第一个菜品</a></p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 待审核申请 -->
+        {% if pending_requests %}
+        <div class="requests-card">
+            <div class="requests-card-header-warning">
+                <h5><i class="fas fa-hourglass-half me-2"></i>待审核申请</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table requests-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>申请ID</th>
+                                <th>类型</th>
+                                <th>相关内容</th>
+                                <th>申请理由</th>
+                                <th>申请时间</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in pending_requests %}
+                            <tr>
+                                <td><strong>#{{ req.id }}</strong></td>
+                                <td>
+                                    {% if req.request_type == 'restaurant_edit' %}
+                                        <span class="request-type-badge restaurant-edit">
+                                            <i class="fas fa-store me-1"></i>商家修改
+                                        </span>
+                                    {% elif req.request_type == 'dish_add' %}
+                                        <span class="request-type-badge dish-add">
+                                            <i class="fas fa-plus me-1"></i>添加菜品
+                                        </span>
+                                    {% elif req.request_type == 'dish_edit' %}
+                                        <span class="request-type-badge dish-edit">
+                                            <i class="fas fa-edit me-1"></i>修改菜品
+                                        </span>
+                                    {% elif req.request_type == 'dish_delete' %}
+                                        <span class="request-type-badge dish-delete">
+                                            <i class="fas fa-trash me-1"></i>删除菜品
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if req.restaurant %}
+                                        <i class="fas fa-store text-warning me-1"></i>{{ req.restaurant.name }}
+                                    {% endif %}
+                                    {% if req.dish %}
+                                        <i class="fas fa-utensils text-success me-1"></i>{{ req.dish.name }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ req.reason or '无' }}</td>
+                                <td><i class="far fa-clock me-1"></i>{{ req.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="request-status-badge pending">
+                                        <i class="fas fa-clock me-1"></i>待审核
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 申请历史 -->
+        {% if all_requests %}
+        <div class="requests-card">
+            <div class="requests-card-header-secondary">
+                <h5><i class="fas fa-history me-2"></i>申请历史</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table requests-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>申请ID</th>
+                                <th>类型</th>
+                                <th>相关内容</th>
+                                <th>申请时间</th>
+                                <th>审核时间</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in all_requests %}
+                            <tr>
+                                <td><strong>#{{ req.id }}</strong></td>
+                                <td>
+                                    {% if req.request_type == 'restaurant_edit' %}
+                                        <span class="request-type-badge restaurant-edit">
+                                            <i class="fas fa-store me-1"></i>商家修改
+                                        </span>
+                                    {% elif req.request_type == 'dish_add' %}
+                                        <span class="request-type-badge dish-add">
+                                            <i class="fas fa-plus me-1"></i>添加菜品
+                                        </span>
+                                    {% elif req.request_type == 'dish_edit' %}
+                                        <span class="request-type-badge dish-edit">
+                                            <i class="fas fa-edit me-1"></i>修改菜品
+                                        </span>
+                                    {% elif req.request_type == 'dish_delete' %}
+                                        <span class="request-type-badge dish-delete">
+                                            <i class="fas fa-trash me-1"></i>删除菜品
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if req.restaurant %}
+                                        <i class="fas fa-store text-warning me-1"></i>{{ req.restaurant.name }}
+                                    {% endif %}
+                                    {% if req.dish %}
+                                        <i class="fas fa-utensils text-success me-1"></i>{{ req.dish.name }}
+                                    {% endif %}
+                                </td>
+                                <td><i class="far fa-clock me-1"></i>{{ req.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if req.reviewed_at %}
+                                        <i class="fas fa-check me-1"></i>{{ req.reviewed_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if req.status == 'pending' %}
+                                        <span class="request-status-badge pending">
+                                            <i class="fas fa-clock me-1"></i>待审核
+                                        </span>
+                                    {% elif req.status == 'approved' %}
+                                        <span class="request-status-badge approved">
+                                            <i class="fas fa-check-circle me-1"></i>已通过
+                                        </span>
+                                    {% elif req.status == 'rejected' %}
+                                        <span class="request-status-badge rejected">
+                                            <i class="fas fa-times-circle me-1"></i>已拒绝
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// 切换商家营业状态
+function toggleRestaurantStatus(restaurantId, currentStatus) {
+    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+    const action = newStatus === 'open' ? '开始营业' : '暂停营业';
+    
+    if (!confirm(`确认${action}吗？`)) {
+        return;
+    }
+    
+    fetch(`/restaurant/merchant/${restaurantId}/toggle_status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('操作失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+    });
+}
+
+// 切换菜品上下架状态
+function toggleDishStatus(dishId, currentStatus) {
+    const newStatus = !currentStatus;
+    const action = newStatus ? '上架' : '下架';
+    
+    if (!confirm(`确认${action}此菜品吗？`)) {
+        return;
+    }
+    
+    fetch(`/dish/merchant/${dishId}/toggle_available`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ available: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('操作失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+    });
+}
+</script>
+{% endblock %}
+

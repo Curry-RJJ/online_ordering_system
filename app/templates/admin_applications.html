@@ -4,48 +4,155 @@
 <div class="container mt-4">
     <h2>管理员申请审核</h2>
     
-    {% if applications %}
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>申请ID</th>
-                        <th>申请用户</th>
-                        <th>申请理由</th>
-                        <th>申请时间</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for application in applications %}
-                    <tr>
-                        <td>{{ application.id }}</td>
-                        <td>{{ application.user.username }}</td>
-                        <td>{{ application.reason or '无' }}</td>
-                        <td>{{ application.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td>
-                            <a href="{{ url_for('auth.approve_application', app_id=application.id) }}" 
-                               class="btn btn-sm btn-success"
-                               onclick="return confirm('确认通过此申请？')">
-                                通过
-                            </a>
-                            <a href="{{ url_for('auth.reject_application', app_id=application.id) }}" 
-                               class="btn btn-sm btn-danger"
-                               onclick="return confirm('确认拒绝此申请？')">
-                                拒绝
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- 管理员申请 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>管理员申请</h5>
         </div>
-    {% else %}
-        <div class="alert alert-info">
-            <p>暂无待审核的管理员申请。</p>
+        <div class="card-body">
+            {% if admin_applications %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>申请ID</th>
+                                <th>申请用户</th>
+                                <th>申请类型</th>
+                                <th>申请理由</th>
+                                <th>申请时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in admin_applications %}
+                            <tr>
+                                <td>{{ application.id }}</td>
+                                <td>{{ application.user.username }}</td>
+                                <td>
+                                    {% if application.application_type == 'admin' %}
+                                        <span class="badge bg-primary">管理员</span>
+                                    {% else %}
+                                        <span class="badge bg-success">商家管理员</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ application.reason or '无' }}</td>
+                                <td>{{ application.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <a href="{{ url_for('auth.approve_application', app_id=application.id) }}" 
+                                       class="btn btn-sm btn-success"
+                                       onclick="return confirm('确认通过此申请？')">
+                                        通过
+                                    </a>
+                                    <a href="{{ url_for('auth.reject_application', app_id=application.id) }}" 
+                                       class="btn btn-sm btn-danger"
+                                       onclick="return confirm('确认拒绝此申请？')">
+                                        拒绝
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p>暂无待审核的管理员申请。</p>
+                </div>
+            {% endif %}
         </div>
-    {% endif %}
+    </div>
     
-    <a href="{{ url_for('dish.list_dishes') }}" class="btn btn-secondary">返回首页</a>
+    <!-- 商家管理员申请商家 -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-store me-2"></i>商家管理员申请</h5>
+        </div>
+        <div class="card-body">
+            {% if merchant_applications %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>申请ID</th>
+                                <th>申请用户</th>
+                                <th>申请类型</th>
+                                <th>商家名称</th>
+                                <th>商家信息</th>
+                                <th>申请理由</th>
+                                <th>申请时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in merchant_applications %}
+                            <tr>
+                                <td>{{ application.id }}</td>
+                                <td>{{ application.user.username }}</td>
+                                <td>
+                                    {% if application.application_type == 'existing' %}
+                                        <span class="badge bg-primary">现有商家</span>
+                                    {% else %}
+                                        <span class="badge bg-success">新建商家</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if application.restaurant %}
+                                        {{ application.restaurant.name }}
+                                    {% else %}
+                                        {{ application.restaurant_name or '未知' }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if application.application_type == 'new' %}
+                                        <small>
+                                            地址: {{ application.restaurant_address or '未设置' }}<br>
+                                            电话: {{ application.restaurant_phone or '未设置' }}<br>
+                                            菜系: {{ application.cuisine_type or '未设置' }}
+                                        </small>
+                                    {% else %}
+                                        <small class="text-muted">现有商家</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ application.reason or '无' }}</td>
+                                <td>{{ application.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    {% if application.application_type == 'new' %}
+                                        <a href="{{ url_for('auth.approve_merchant_application', app_id=application.id) }}" 
+                                           class="btn btn-sm btn-success"
+                                           onclick="return confirm('确认通过此申请？商家将创建但保持下线状态。')">
+                                            通过
+                                        </a>
+                                        <a href="{{ url_for('auth.reject_merchant_application', app_id=application.id) }}" 
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('确认拒绝此申请？新建的商家将被删除。')">
+                                            拒绝
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('auth.approve_merchant_application', app_id=application.id) }}" 
+                                           class="btn btn-sm btn-success"
+                                           onclick="return confirm('确认通过此申请？')">
+                                            通过
+                                        </a>
+                                        <a href="{{ url_for('auth.reject_merchant_application', app_id=application.id) }}" 
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('确认拒绝此申请？')">
+                                            拒绝
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p>暂无待审核的商家管理员申请。</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-secondary">返回首页</a>
 </div>
 {% endblock %}

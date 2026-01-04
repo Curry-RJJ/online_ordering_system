@@ -7,11 +7,12 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password = db.Column(db.String(512), nullable=False) 
-    role = db.Column(db.String(10), default='user')  # user/admin/merchant
+    role = db.Column(db.String(20), default='user')  # user/admin/merchant
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
     avatar = db.Column(db.String(200), default='/static/images/default_avatar.png')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))  # 商家管理员所管理的商家ID
     
     # 用户地址
     addresses = db.relationship('Address', backref='user', lazy='dynamic')
@@ -47,7 +48,8 @@ class Restaurant(db.Model):
     min_order = db.Column(db.Float, default=0)  # 起送价
     rating = db.Column(db.Float, default=5.0)  # 评分
     review_count = db.Column(db.Integer, default=0)  # 评价数量
-    status = db.Column(db.String(20), default='open')  # open/closed/busy
+    status = db.Column(db.String(20), default='open')  # open/closed/busy/offline
+    is_active = db.Column(db.Boolean, default=True)  # 是否可见（上线状态）
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # 餐厅菜品
@@ -56,6 +58,8 @@ class Restaurant(db.Model):
     orders = db.relationship('Order', backref='restaurant', lazy='dynamic')
     # 餐厅评价
     reviews = db.relationship('Review', backref='restaurant', lazy='dynamic')
+    # 商家管理员
+    managers = db.relationship('User', backref='managed_restaurant', lazy='dynamic')
 
 class RestaurantCategory(db.Model):
     """餐厅分类"""
@@ -165,11 +169,49 @@ class AdminApplication(db.Model):
     """管理员申请"""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    application_type = db.Column(db.String(20), default='admin')  # admin/merchant
     reason = db.Column(db.Text)
-    status = db.Column(db.String(20), default='pending')
+    status = db.Column(db.String(20), default='pending')  # pending/approved/rejected
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref='admin_applications')
+
+class MerchantApplication(db.Model):
+    """商家管理员申请商家"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    application_type = db.Column(db.String(20), nullable=False)  # existing/new
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))  # 申请现有商家时填写
+    restaurant_name = db.Column(db.String(100))  # 创建新商家时的商家名
+    restaurant_description = db.Column(db.Text)  # 新商家描述
+    restaurant_address = db.Column(db.String(200))  # 新商家地址
+    restaurant_phone = db.Column(db.String(20))  # 新商家电话
+    cuisine_type = db.Column(db.String(50))  # 菜系类型
+    reason = db.Column(db.Text)  # 申请理由
+    status = db.Column(db.String(20), default='pending')  # pending/approved/rejected
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='merchant_applications', foreign_keys=[user_id])
+    restaurant = db.relationship('Restaurant', backref='applications', foreign_keys=[restaurant_id])
+
+class RestaurantChangeRequest(db.Model):
+    """商家和菜品修改审核请求"""
+    id = db.Column(db.Integer, primary_key=True)
+    merchant_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    request_type = db.Column(db.String(20), nullable=False)  # restaurant_edit/dish_add/dish_edit/dish_delete
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))
+    dish_id = db.Column(db.Integer, db.ForeignKey('dish.id'))
+    change_data = db.Column(db.Text)  # JSON格式存储修改的数据
+    reason = db.Column(db.Text)  # 修改原因
+    status = db.Column(db.String(20), default='pending')  # pending/approved/rejected
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    reviewed_at = db.Column(db.DateTime)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    merchant = db.relationship('User', backref='change_requests', foreign_keys=[merchant_id])
+    reviewer = db.relationship('User', foreign_keys=[reviewer_id])
+    restaurant = db.relationship('Restaurant', backref='change_requests')
+    dish = db.relationship('Dish', backref='change_requests')
 
 @login_manager.user_loader
 def load_user(user_id):

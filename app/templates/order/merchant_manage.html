@@ -1,0 +1,745 @@
+{% extends "base.html" %}
+
+{% block title %}订单管理 - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="merchant-order-management">
+    <div class="container-fluid py-4">
+        <!-- 页面标题 -->
+        <div class="page-header-section mb-4">
+            <h2 class="page-title">
+                <i class="fas fa-store-alt me-2"></i>{{ restaurant.name }} - 订单管理
+            </h2>
+            <p class="text-muted mb-0">实时管理您的订单，及时处理顾客需求</p>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card stat-card-today">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ stats.today_orders }}</h3>
+                        <p class="stat-label">今日订单</p>
+                        <small class="stat-detail">营业额 ¥{{ "%.2f"|format(stats.today_revenue) }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card stat-card-pending">
+                    <div class="stat-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ stats.pending_orders }}</h3>
+                        <p class="stat-label">待确认</p>
+                        <small class="stat-detail">需要及时处理</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card stat-card-processing">
+                    <div class="stat-icon">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ stats.confirmed_orders + stats.preparing_orders + stats.delivering_orders }}</h3>
+                        <p class="stat-label">进行中</p>
+                        <small class="stat-detail">制作中/配送中</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card stat-card-completed">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ stats.completed_orders }}</h3>
+                        <p class="stat-label">已完成</p>
+                        <small class="stat-detail">总计 {{ stats.total_orders }} 单</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单筛选 -->
+        <div class="filter-section mb-4">
+            <div class="filter-buttons">
+                <a href="{{ url_for('order.merchant_manage_orders') }}" 
+                   class="filter-btn {% if status_filter == 'all' %}active{% endif %}">
+                    <i class="fas fa-list me-1"></i>全部 <span class="badge">{{ stats.total_orders }}</span>
+                </a>
+                <a href="{{ url_for('order.merchant_manage_orders', status='pending') }}" 
+                   class="filter-btn filter-btn-pending {% if status_filter == 'pending' %}active{% endif %}">
+                    <i class="fas fa-hourglass-half me-1"></i>待确认 <span class="badge">{{ stats.pending_orders }}</span>
+                </a>
+                <a href="{{ url_for('order.merchant_manage_orders', status='confirmed') }}" 
+                   class="filter-btn filter-btn-confirmed {% if status_filter == 'confirmed' %}active{% endif %}">
+                    <i class="fas fa-check me-1"></i>已确认 <span class="badge">{{ stats.confirmed_orders }}</span>
+                </a>
+                <a href="{{ url_for('order.merchant_manage_orders', status='preparing') }}" 
+                   class="filter-btn filter-btn-preparing {% if status_filter == 'preparing' %}active{% endif %}">
+                    <i class="fas fa-utensils me-1"></i>制作中 <span class="badge">{{ stats.preparing_orders }}</span>
+                </a>
+                <a href="{{ url_for('order.merchant_manage_orders', status='delivering') }}" 
+                   class="filter-btn filter-btn-delivering {% if status_filter == 'delivering' %}active{% endif %}">
+                    <i class="fas fa-shipping-fast me-1"></i>配送中 <span class="badge">{{ stats.delivering_orders }}</span>
+                </a>
+                <a href="{{ url_for('order.merchant_manage_orders', status='completed') }}" 
+                   class="filter-btn filter-btn-completed {% if status_filter == 'completed' %}active{% endif %}">
+                    <i class="fas fa-check-double me-1"></i>已完成 <span class="badge">{{ stats.completed_orders }}</span>
+                </a>
+                <a href="{{ url_for('order.merchant_manage_orders', status='cancelled') }}" 
+                   class="filter-btn filter-btn-cancelled {% if status_filter == 'cancelled' %}active{% endif %}">
+                    <i class="fas fa-times me-1"></i>已取消 <span class="badge">{{ stats.cancelled_orders }}</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div class="orders-grid">
+            {% if orders %}
+                {% for order in orders %}
+                <div class="merchant-order-card {% if order.status == 'cancelled' %}order-cancelled{% endif %}">
+                    <!-- 订单头部 -->
+                    <div class="merchant-order-header">
+                        <div class="order-basic-info">
+                            <span class="order-number">
+                                <i class="fas fa-hashtag"></i>{{ order.order_no }}
+                            </span>
+                            <span class="order-time">
+                                <i class="far fa-clock"></i>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </span>
+                        </div>
+                        <div class="order-status-badge">
+                            {% if order.status == 'pending' %}
+                                <span class="status-tag status-pending"><i class="fas fa-hourglass-half"></i> 待确认</span>
+                            {% elif order.status == 'confirmed' %}
+                                <span class="status-tag status-confirmed"><i class="fas fa-check"></i> 已确认</span>
+                            {% elif order.status == 'preparing' %}
+                                <span class="status-tag status-preparing"><i class="fas fa-utensils"></i> 制作中</span>
+                            {% elif order.status == 'delivering' %}
+                                <span class="status-tag status-delivering"><i class="fas fa-shipping-fast"></i> 配送中</span>
+                            {% elif order.status == 'completed' %}
+                                <span class="status-tag status-completed"><i class="fas fa-check-double"></i> 已完成</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="status-tag status-cancelled"><i class="fas fa-times-circle"></i> 已取消</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 订单内容 -->
+                    <div class="merchant-order-body">
+                        <!-- 顾客信息 -->
+                        <div class="customer-section">
+                            <div class="section-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="section-content">
+                                <h6 class="customer-name">{{ order.delivery_name }}</h6>
+                                <p class="customer-phone">{{ order.delivery_phone }}</p>
+                            </div>
+                        </div>
+
+                        <!-- 配送地址 -->
+                        <div class="address-section">
+                            <div class="section-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="section-content">
+                                <p class="delivery-address">{{ order.delivery_address }}</p>
+                            </div>
+                        </div>
+
+                        <!-- 订单商品 -->
+                        <div class="items-section">
+                            <div class="section-title">
+                                <i class="fas fa-shopping-bag me-2"></i>订单商品
+                            </div>
+                            <div class="items-list">
+                                {% for item in order.order_items %}
+                                <div class="item-row">
+                                    <span class="item-name">{{ item.dish.name }}</span>
+                                    <span class="item-quantity">× {{ item.quantity }}</span>
+                                    <span class="item-price">¥{{ "%.2f"|format(item.subtotal) }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- 价格信息 -->
+                        <div class="price-section">
+                            <div class="price-row">
+                                <span>商品小计</span>
+                                <span>¥{{ "%.2f"|format(order.subtotal) }}</span>
+                            </div>
+                            <div class="price-row">
+                                <span>配送费</span>
+                                <span>¥{{ "%.2f"|format(order.delivery_fee) }}</span>
+                            </div>
+                            <div class="price-row price-total">
+                                <strong>订单金额</strong>
+                                <strong class="total-amount">¥{{ "%.2f"|format(order.total_amount) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 订单操作 -->
+                    <div class="merchant-order-footer">
+                        <a href="{{ url_for('order.order_detail', order_id=order.id) }}" 
+                           class="btn btn-sm btn-outline-info" target="_blank">
+                            <i class="fas fa-eye me-1"></i>查看详情
+                        </a>
+                        
+                        {% if order.status == 'pending' %}
+                            <button class="btn btn-sm btn-success" 
+                                    onclick="updateOrderStatus({{ order.id }}, 'confirmed', '确认订单')">
+                                <i class="fas fa-check me-1"></i>确认订单
+                            </button>
+                            <button class="btn btn-sm btn-danger" 
+                                    onclick="updateOrderStatus({{ order.id }}, 'cancelled', '取消订单')">
+                                <i class="fas fa-times me-1"></i>取消
+                            </button>
+                        {% elif order.status == 'confirmed' %}
+                            <button class="btn btn-sm btn-primary" 
+                                    onclick="updateOrderStatus({{ order.id }}, 'preparing', '开始制作')">
+                                <i class="fas fa-utensils me-1"></i>开始制作
+                            </button>
+                        {% elif order.status == 'preparing' %}
+                            <button class="btn btn-sm btn-warning" 
+                                    onclick="updateOrderStatus({{ order.id }}, 'delivering', '开始配送')">
+                                <i class="fas fa-shipping-fast me-1"></i>开始配送
+                            </button>
+                        {% elif order.status == 'delivering' %}
+                            <button class="btn btn-sm btn-success" 
+                                    onclick="updateOrderStatus({{ order.id }}, 'completed', '完成订单')">
+                                <i class="fas fa-check-circle me-1"></i>完成
+                            </button>
+                        {% elif order.status in ['completed', 'cancelled'] %}
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteOrder({{ order.id }}, '{{ order.order_no }}')">
+                                <i class="fas fa-trash me-1"></i>删除订单
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3 class="empty-title">暂无{{ status_filter_name if status_filter != 'all' else '' }}订单</h3>
+                    <p class="empty-description">等待顾客下单中...</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* 整体页面样式 */
+.merchant-order-management {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+/* 页面标题区域 */
+.page-header-section {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.page-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 24px;
+}
+
+/* 统计卡片 */
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s;
+    border-left: 4px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card-today {
+    border-color: #FFD900;
+    background: linear-gradient(135deg, #FFF9E6 0%, #ffffff 100%);
+}
+
+.stat-card-pending {
+    border-color: #ffc107;
+    background: linear-gradient(135deg, #FFF8E1 0%, #ffffff 100%);
+}
+
+.stat-card-processing {
+    border-color: #17a2b8;
+    background: linear-gradient(135deg, #E1F5F8 0%, #ffffff 100%);
+}
+
+.stat-card-completed {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #E8F5E9 0%, #ffffff 100%);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.stat-card-today .stat-icon {
+    background: linear-gradient(135deg, #FFD900 0%, #FF8800 100%);
+    color: white;
+}
+
+.stat-card-pending .stat-icon {
+    background: #ffc107;
+    color: white;
+}
+
+.stat-card-processing .stat-icon {
+    background: #17a2b8;
+    color: white;
+}
+
+.stat-card-completed .stat-icon {
+    background: #28a745;
+    color: white;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 4px 0;
+}
+
+.stat-detail {
+    font-size: 12px;
+    color: #adb5bd;
+}
+
+/* 筛选区域 */
+.filter-section {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    color: #6c757d;
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filter-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #FFD900 0%, #FF8800 100%);
+    color: white;
+    border-color: #FF8800;
+}
+
+.filter-btn .badge {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.filter-btn.active .badge {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 订单网格 */
+.orders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+/* 商家订单卡片 */
+.merchant-order-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.merchant-order-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+}
+
+.merchant-order-card.order-cancelled {
+    opacity: 0.75;
+}
+
+/* 订单头部 */
+.merchant-order-header {
+    background: linear-gradient(135deg, #FFD900 0%, #FF8800 100%);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-cancelled .merchant-order-header {
+    background: linear-gradient(135deg, #868e96 0%, #6c757d 100%);
+}
+
+.order-basic-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.order-number {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.order-time {
+    font-size: 13px;
+    color: #555;
+}
+
+/* 状态标签 */
+.status-tag {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-confirmed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-preparing {
+    background: #e7d6ff;
+    color: #5a189a;
+}
+
+.status-delivering {
+    background: #ffe5cc;
+    color: #cc5500;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* 订单内容 */
+.merchant-order-body {
+    padding: 20px;
+}
+
+.customer-section,
+.address-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.section-icon {
+    font-size: 24px;
+    color: #FFD900;
+    flex-shrink: 0;
+}
+
+.section-content {
+    flex: 1;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 4px 0;
+}
+
+.customer-phone {
+    color: #6c757d;
+    margin: 0;
+    font-size: 14px;
+}
+
+.delivery-address {
+    color: #495057;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 商品列表 */
+.items-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px dashed #dee2e6;
+}
+
+.section-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.items-list {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.item-name {
+    flex: 1;
+    color: #495057;
+    font-weight: 500;
+}
+
+.item-quantity {
+    color: #6c757d;
+    margin: 0 12px;
+}
+
+.item-price {
+    color: #ff6b35;
+    font-weight: 600;
+}
+
+/* 价格区域 */
+.price-section {
+    margin-top: 16px;
+    padding: 16px;
+    background: #fff8f0;
+    border-radius: 12px;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.price-row:last-child {
+    margin-bottom: 0;
+}
+
+.price-row.price-total {
+    padding-top: 12px;
+    border-top: 2px solid #dee2e6;
+    margin-top: 8px;
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+.total-amount {
+    font-size: 20px;
+    color: #ff6b35;
+}
+
+/* 订单操作区 */
+.merchant-order-footer {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.merchant-order-footer .btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* 空状态 */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 40px;
+    background: white;
+    border-radius: 16px;
+}
+
+.empty-icon {
+    font-size: 80px;
+    color: #dee2e6;
+    margin-bottom: 24px;
+}
+
+.empty-title {
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.empty-description {
+    color: #adb5bd;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .orders-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-buttons {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 10px;
+    }
+    
+    .filter-btn {
+        white-space: nowrap;
+    }
+}
+</style>
+
+<script>
+function updateOrderStatus(orderId, newStatus, actionName) {
+    if (!confirm(`确定要${actionName}吗？`)) {
+        return;
+    }
+    
+    fetch(`/order/merchant/update_status/${orderId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('操作失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('请求失败: ' + error);
+    });
+}
+
+function deleteOrder(orderId, orderNo) {
+    if (!confirm(`确定要删除订单 ${orderNo} 吗？\n\n此操作不可恢复！`)) {
+        return;
+    }
+    
+    // 创建表单并提交
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/order/merchant/delete/${orderId}`;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// 自动刷新（每30秒）
+let autoRefresh = setInterval(function() {
+    location.reload();
+}, 30000);
+
+// 页面可见性变化时控制自动刷新
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        clearInterval(autoRefresh);
+    } else {
+        autoRefresh = setInterval(function() {
+            location.reload();
+        }, 30000);
+    }
+});
+</script>
+
+{% endblock %}

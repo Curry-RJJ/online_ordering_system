@@ -11,6 +11,7 @@
                     <th>ID</th>
                     <th>用户名</th>
                     <th>角色</th>
+                    <th>绑定餐厅</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -20,17 +21,30 @@
                     <td>{{ user.id }}</td>
                     <td>{{ user.username }}</td>
                     <td>
-                        <span class="badge bg-{{ 'success' if user.role == 'admin' else 'primary' }}">
-                            {{ '管理员' if user.role == 'admin' else '普通用户' }}
-                        </span>
+                        {% if user.role == 'admin' %}
+                            <span class="badge bg-success">管理员</span>
+                        {% elif user.role == 'merchant' %}
+                            <span class="badge bg-warning text-dark">商家管理员</span>
+                        {% else %}
+                            <span class="badge bg-primary">普通用户</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.restaurant_id and user.managed_restaurant %}
+                            <span class="text-primary">
+                                <i class="fas fa-store"></i>
+                                {{ user.managed_restaurant.name }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">--</span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if user.id != current_user.id %}
-                            <a href="{{ url_for('auth.toggle_user_role', user_id=user.id) }}" 
-                               class="btn btn-sm btn-warning"
-                               onclick="return confirm('确认修改用户角色？')">
+                            <button type="button" class="btn btn-sm btn-warning" 
+                                    onclick="showRoleModal('{{ user.id }}', '{{ user.username }}', '{{ user.role }}', '{{ user.managed_restaurant.name if user.managed_restaurant else '' }}')">
                                 切换角色
-                            </a>
+                            </button>
                             <a href="{{ url_for('auth.delete_user', user_id=user.id) }}" 
                                class="btn btn-sm btn-danger"
                                onclick="return confirm('确认删除此用户？此操作不可恢复！')">
@@ -48,4 +62,120 @@
     
     <a href="{{ url_for('dish.list_dishes') }}" class="btn btn-secondary">返回首页</a>
 </div>
+
+<!-- 角色切换模态框 -->
+<div class="modal fade" id="roleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">切换用户角色</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="roleForm" method="POST" action="">
+                <div class="modal-body">
+                    <p>用户：<strong id="modalUsername"></strong></p>
+                    <p>当前角色：<span id="modalCurrentRole" class="badge"></span></p>
+                    <p id="restaurantInfo" style="display: none;">
+                        绑定餐厅：<span class="text-primary"><i class="fas fa-store"></i> <strong id="modalRestaurant"></strong></span>
+                    </p>
+                    
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">选择新角色：</label>
+                        <select class="form-select" id="newRole" name="new_role" required>
+                            <option value="">-- 请选择 --</option>
+                            <option value="user">普通用户</option>
+                            <option value="merchant">商家管理员</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            <strong>角色说明：</strong><br>
+                            • <strong>普通用户</strong>：可以浏览餐厅、下单、管理订单<br>
+                            • <strong>商家管理员</strong>：可以管理自己的餐厅和菜品（需审核）<br>
+                            • <strong>管理员</strong>：拥有所有权限，可以管理用户、餐厅、菜品等
+                        </small>
+                    </div>
+                    
+                    <div class="alert alert-warning" id="roleChangeWarning" style="display: none;">
+                        <small>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>注意：</strong>从商家管理员切换到其他角色时，将会自动解除该用户与餐厅的绑定关系。
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-warning">确认切换</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.35em 0.65em;
+}
+</style>
+
+<script>
+function showRoleModal(userId, username, currentRole, restaurantName) {
+    // 设置模态框内容
+    document.getElementById('modalUsername').textContent = username;
+    
+    // 设置当前角色显示
+    const roleSpan = document.getElementById('modalCurrentRole');
+    let roleText = '';
+    let roleClass = '';
+    
+    if (currentRole === 'admin') {
+        roleText = '管理员';
+        roleClass = 'bg-success';
+    } else if (currentRole === 'merchant') {
+        roleText = '商家管理员';
+        roleClass = 'bg-warning text-dark';
+    } else {
+        roleText = '普通用户';
+        roleClass = 'bg-primary';
+    }
+    
+    roleSpan.textContent = roleText;
+    roleSpan.className = 'badge ' + roleClass;
+    
+    // 显示/隐藏餐厅信息和警告
+    const restaurantInfo = document.getElementById('restaurantInfo');
+    const modalRestaurant = document.getElementById('modalRestaurant');
+    const roleChangeWarning = document.getElementById('roleChangeWarning');
+    
+    // 只有当前是商家管理员且有绑定餐厅时，才显示餐厅信息和警告
+    if (currentRole === 'merchant' && restaurantName && restaurantName.trim() !== '') {
+        modalRestaurant.textContent = restaurantName;
+        restaurantInfo.style.display = 'block';
+        roleChangeWarning.style.display = 'block';
+    } else {
+        restaurantInfo.style.display = 'none';
+        roleChangeWarning.style.display = 'none';
+    }
+    
+    // 设置表单action
+    document.getElementById('roleForm').action = `/auth/admin/users/${userId}/change_role`;
+    
+    // 重置选择框
+    document.getElementById('newRole').value = '';
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('roleModal'));
+    modal.show();
+}
+</script>
 {% endblock %} 

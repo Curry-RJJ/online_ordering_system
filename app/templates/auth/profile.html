@@ -37,9 +37,13 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">当前角色</label>
                                 <p class="form-control-plaintext">
-                                    <span class="badge bg-{{ 'warning' if user.role == 'admin' else 'secondary' }}">
-                                        {{ '管理员' if user.role == 'admin' else '普通用户' }}
+                                    <span class="badge bg-{{ 'danger' if user.role == 'admin' else ('success' if user.role == 'merchant' else 'secondary') }}">
+                                        {{ '管理员' if user.role == 'admin' else ('商家管理员' if user.role == 'merchant' else '普通用户') }}
                                     </span>
+                                    {% if user.role == 'merchant' and user.restaurant_id %}
+                                        <br>
+                                        <small class="text-muted">管理商家：{{ user.managed_restaurant.name }}</small>
+                                    {% endif %}
                                 </p>
                             </div>
                         </div>
@@ -70,7 +74,7 @@
             </div>
 
             <!-- 收货地址卡片 -->
-            <div class="card shadow">
+            <div class="card shadow mb-4">
                 <div class="card-header bg-warning d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 text-dark">
                         <i class="fas fa-map-marker-alt me-2"></i>收货地址
@@ -127,9 +131,153 @@
                     {% endif %}
                 </div>
             </div>
+            
+            <!-- 申请记录卡片 -->
+            {% if admin_applications or merchant_applications %}
+            <div class="card shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>我的申请记录
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if admin_applications %}
+                    <h5 class="mb-3">管理员申请</h5>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>申请类型</th>
+                                    <th>申请理由</th>
+                                    <th>申请时间</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in admin_applications %}
+                                <tr>
+                                    <td>
+                                        {% if app.application_type == 'admin' %}
+                                            <span class="badge bg-primary">管理员</span>
+                                        {% else %}
+                                            <span class="badge bg-success">商家管理员</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ app.reason or '无' }}</td>
+                                    <td>{{ app.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        {% if app.status == 'pending' %}
+                                            <span class="badge bg-warning">待审核</span>
+                                        {% elif app.status == 'approved' %}
+                                            <span class="badge bg-success">已通过</span>
+                                        {% elif app.status == 'rejected' %}
+                                            <span class="badge bg-danger">已拒绝</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    
+                    {% if merchant_applications %}
+                    <h5 class="mb-3">商家申请</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>申请类型</th>
+                                    <th>商家名称</th>
+                                    <th>申请理由</th>
+                                    <th>申请时间</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in merchant_applications %}
+                                <tr>
+                                    <td>
+                                        {% if app.application_type == 'existing' %}
+                                            <span class="badge bg-primary">现有商家</span>
+                                        {% else %}
+                                            <span class="badge bg-success">新建商家</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if app.restaurant %}
+                                            {{ app.restaurant.name }}
+                                        {% else %}
+                                            {{ app.restaurant_name or '未知' }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ app.reason or '无' }}</td>
+                                    <td>{{ app.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        {% if app.status == 'pending' %}
+                                            <span class="badge bg-warning">待审核</span>
+                                        {% elif app.status == 'approved' %}
+                                            <span class="badge bg-success">已通过</span>
+                                        {% elif app.status == 'rejected' %}
+                                            <span class="badge bg-danger">已拒绝</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
         
         <div class="col-lg-4">
+            <!-- 快捷操作卡片 -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket me-2"></i>快捷操作
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if user.role == 'user' %}
+                            <a href="{{ url_for('auth.apply_admin') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-shield me-2"></i>申请成为管理员
+                            </a>
+                        {% elif user.role == 'merchant' %}
+                            {% if user.restaurant_id %}
+                            <a href="{{ url_for('restaurant.merchant_dashboard') }}" class="btn btn-outline-success">
+                                <i class="fas fa-tachometer-alt me-2"></i>商家管理面板
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('auth.apply_restaurant') }}" class="btn btn-outline-info">
+                                <i class="fas fa-store me-2"></i>申请管理商家
+                            </a>
+                            {% endif %}
+                        {% elif user.role == 'admin' %}
+                            <a href="{{ url_for('auth.admin_applications') }}" class="btn btn-outline-warning">
+                                <i class="fas fa-clipboard-check me-2"></i>审核申请
+                            </a>
+                            <a href="{{ url_for('restaurant.admin_change_requests') }}" class="btn btn-outline-info">
+                                <i class="fas fa-tasks me-2"></i>商家修改审核
+                            </a>
+                            <a href="{{ url_for('restaurant.admin_restaurants') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-store me-2"></i>商家管理
+                            </a>
+                            <a href="{{ url_for('dish.admin_dishes') }}" class="btn btn-outline-success">
+                                <i class="fas fa-utensils me-2"></i>菜品管理
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('order.list_orders') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-shopping-bag me-2"></i>我的订单
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 账户信息卡片 -->
             <div class="card shadow">
                 <div class="card-header bg-warning">

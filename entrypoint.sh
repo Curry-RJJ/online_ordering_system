@@ -28,11 +28,36 @@ with app.app_context():
     if User.query.count() == 0:
         print("开始初始化测试数据...")
         try:
-            # 导入并执行初始化脚本
-            exec(open('init_mysql_data.py').read())
+            from werkzeug.security import generate_password_hash
+            
+            # 创建管理员用户
+            admin = User(
+                username='admin',
+                password=generate_password_hash('admin123'),
+                role='admin',
+                phone='13800138000',
+                email='admin@meituan.com'
+            )
+            db.session.add(admin)
+            
+            # 创建测试用户
+            test_user = User(
+                username='testuser',
+                password=generate_password_hash('123456'),
+                role='user',
+                phone='13900139000',
+                email='test@user.com'
+            )
+            db.session.add(test_user)
+            
+            db.session.commit()
             print("测试数据初始化成功！")
+            print("管理员账号: admin / admin123")
+            print("测试用户: testuser / 123456")
         except Exception as e:
-            print(f"初始化数据时出错（可忽略）: {e}")
+            print(f"初始化数据时出错: {e}")
+            import traceback
+            traceback.print_exc()
     else:
         print("数据库已有数据，跳过初始化。")
 END
