@@ -91,7 +91,7 @@ if not defined concurrent_users (
 echo.
 echo 开始测试 %concurrent_users% 个并发用户...
 echo.
-python tests/concurrent_test.py --users %concurrent_users%
+python concurrent_test.py --users %concurrent_users%
 echo.
 echo 测试完成！
 echo.
@@ -128,7 +128,7 @@ if /i not "%confirm%"=="Y" goto menu
 echo.
 echo 开始多级别测试...
 echo.
-python tests/multi_level_test.py
+python multi_level_test.py
 echo.
 echo 所有测试完成！
 echo.
@@ -168,7 +168,7 @@ echo.
 echo 按 Ctrl+C 可停止测试
 echo.
 
-locust -f tests/locust_test.py --host=http://localhost:5000
+locust -f locust_test.py --host=http://localhost:5000
 
 goto menu
 
@@ -183,7 +183,7 @@ echo 用于验证系统是否正确处理并发冲突
 echo.
 pause
 
-python -c "from tests.concurrent_test import test_concurrent_registration; test_concurrent_registration()"
+python -c "from concurrent_test import test_concurrent_registration; test_concurrent_registration()"
 
 echo.
 pause
@@ -194,4 +194,3 @@ echo.
 echo 感谢使用！
 echo.
 exit /b 0
-

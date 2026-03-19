@@ -111,7 +111,7 @@ def test_flask_app():
     
     try:
         # 尝试导入并创建应用
-        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from app import create_app
         
         app = create_app()

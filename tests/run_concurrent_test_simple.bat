@@ -77,7 +77,7 @@ if not defined concurrent_users (
 echo.
 echo Starting test with %concurrent_users% concurrent users...
 echo.
-python tests/concurrent_test.py --users %concurrent_users%
+python concurrent_test.py --users %concurrent_users%
 echo.
 echo Test completed!
 echo.
@@ -114,7 +114,7 @@ if /i not "%confirm%"=="Y" goto menu
 echo.
 echo Starting multi-level test...
 echo.
-python tests/multi_level_test.py
+python multi_level_test.py
 echo.
 echo All tests completed!
 echo.
@@ -154,7 +154,7 @@ echo.
 echo Press Ctrl+C to stop
 echo.
 
-locust -f tests/locust_test.py --host=http://localhost:5000
+locust -f locust_test.py --host=http://localhost:5000
 
 goto menu
 
@@ -169,7 +169,7 @@ echo the same username to verify conflict handling
 echo.
 pause
 
-python -c "from tests.concurrent_test import test_concurrent_registration; test_concurrent_registration()"
+python -c "from concurrent_test import test_concurrent_registration; test_concurrent_registration()"
 
 echo.
 pause
@@ -180,4 +180,3 @@ echo.
 echo Thank you!
 echo.
 exit /b 0
-

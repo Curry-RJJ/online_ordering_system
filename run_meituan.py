@@ -19,12 +19,12 @@ def create_app_with_config(use_mysql=False):
     
     if use_mysql:
         # 使用MySQL配置
-        from config_mysql import DevelopmentConfig
+        from database.config_mysql import DevelopmentConfig
         app.config.from_object(DevelopmentConfig)
         print("🗄️ 使用MySQL数据库")
     else:
         # 使用SQLite配置
-        from config import Config
+        from database.config import Config
         app.config.from_object(Config)
         print("🗄️ 使用SQLite数据库")
     
@@ -87,7 +87,7 @@ def main():
         if choice == '2':
             print("\n🔧 初始化MySQL数据库...")
             try:
-                from init_mysql_data import init_mysql_database
+                from database.init_mysql_data import init_mysql_database
                 if init_mysql_database():
                     print("\n✅ MySQL数据库初始化成功！")
                     print("现在可以运行: python run_meituan.py mysql")
@@ -101,7 +101,7 @@ def main():
         else:
             print("\n🔧 初始化SQLite数据库...")
             try:
-                from init_data import init_database
+                from database.init_data import init_database
                 init_database()
                 print("\n✅ SQLite数据库初始化成功！")
                 print("现在可以运行: python run_meituan.py")
