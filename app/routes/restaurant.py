@@ -2,9 +2,56 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app.models import Restaurant, Dish, Category, Review, CartItem, RestaurantChangeRequest
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
-from app import db
+from app import db, cache
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 import json
+
+# ──────────────────────────────────────────────
+# 缓存辅助函数
+# ──────────────────────────────────────────────
+
+_LIST_VER_KEY = 'restaurant_list_ver'
+
+
+def _to_restaurant_dict(r):
+    return dict(id=r.id, name=r.name, description=r.description, logo=r.logo,
+                banner=r.banner, address=r.address, phone=r.phone,
+                cuisine_type=r.cuisine_type, business_hours=r.business_hours,
+                delivery_fee=r.delivery_fee, min_order=r.min_order,
+                rating=r.rating, review_count=r.review_count,
+                status=r.status, is_active=r.is_active)
+
+
+def _to_category_dict(c):
+    return dict(id=c.id, name=c.name, icon=c.icon, sort_order=c.sort_order)
+
+
+def _to_dish_dict(d):
+    return dict(id=d.id, name=d.name, description=d.description,
+                price=d.price, original_price=d.original_price,
+                discount_rate=d.discount_rate, image=d.image,
+                ingredients=d.ingredients, sales_count=d.sales_count,
+                rating=d.rating, is_recommended=d.is_recommended,
+                is_spicy=d.is_spicy, available=d.available,
+                restaurant_id=d.restaurant_id, category_id=d.category_id)
+
+
+def _get_list_version():
+    v = cache.get(_LIST_VER_KEY)
+    if v is None:
+        v = 1
+        cache.set(_LIST_VER_KEY, v, timeout=0)
+    return v
+
+
+def _invalidate_restaurant_cache(restaurant_id=None):
+    """清除餐厅相关缓存（详情缓存 + 递增列表版本号）"""
+    if restaurant_id:
+        cache.delete(f'restaurant_menu:{restaurant_id}')
+        cache.delete(f'restaurant_menu_ajax:{restaurant_id}')
+    v = cache.get(_LIST_VER_KEY) or 0
+    cache.set(_LIST_VER_KEY, v + 1, timeout=0)
 
 restaurant_bp = Blueprint('restaurant', __name__, url_prefix='/restaurant')
 
@@ -12,133 +59,142 @@ restaurant_bp = Blueprint('restaurant', __name__, url_prefix='/restaurant')
 def list_restaurants():
     """餐厅列表页面"""
     try:
-        # 获取搜索关键词
         keyword = request.args.get('keyword', '')
         category_id = request.args.get('category', type=int)
-        sort_by = request.args.get('sort', 'rating')  # rating, distance, sales
-        
-        # 构建查询
-        query = Restaurant.query.filter_by(status='open')
-        
-        if keyword:
-            # 同时搜索餐厅名称和菜品名称
-            dish_restaurants = db.session.query(Restaurant.id).join(Dish).filter(
-                Dish.name.contains(keyword),
-                Dish.available == True
-            ).distinct().subquery()
-            
-            query = query.filter(
-                or_(
-                    Restaurant.name.contains(keyword),
-                    Restaurant.id.in_(dish_restaurants)
-                )
-            )
-        
-        if category_id:
-            # 筛选特定分类的餐厅
-            query = query.join(Dish).join(Category).filter(Category.id == category_id)
+        sort_by = request.args.get('sort', 'rating')
 
-        # 排序
-        if sort_by == 'rating':
-            query = query.order_by(Restaurant.rating.desc())
-        elif sort_by == 'sales':
-            query = query.order_by(Restaurant.review_count.desc())
-        else:
-            query = query.order_by(Restaurant.created_at.desc())
-        
-        restaurants = query.distinct().all()
-        
-        # 获取所有分类用于筛选
-        all_categories = Category.query.order_by(Category.sort_order).all()
-        
-        return render_template('restaurant/list.html', 
-                             restaurants=restaurants, 
-                             categories=all_categories,
-                             keyword=keyword,
-                             current_category=category_id,
-                             sort_by=sort_by)
+        version = _get_list_version()
+        cache_key = f'restaurant_list_v{version}:{keyword}:{category_id}:{sort_by}'
+        cached = cache.get(cache_key)
+
+        if cached is None:
+            query = Restaurant.query.filter_by(status='open')
+
+            if keyword:
+                dish_restaurants = db.session.query(Restaurant.id).join(Dish).filter(
+                    Dish.name.contains(keyword),
+                    Dish.available == True
+                ).distinct().subquery()
+                query = query.filter(
+                    or_(
+                        Restaurant.name.contains(keyword),
+                        Restaurant.id.in_(dish_restaurants)
+                    )
+                )
+
+            if category_id:
+                query = query.join(Dish).join(Category).filter(Category.id == category_id)
+
+            if sort_by == 'rating':
+                query = query.order_by(Restaurant.rating.desc())
+            elif sort_by == 'sales':
+                query = query.order_by(Restaurant.review_count.desc())
+            else:
+                query = query.order_by(Restaurant.created_at.desc())
+
+            restaurants_raw = query.distinct().all()
+            categories_raw = Category.query.order_by(Category.sort_order).all()
+
+            cached = {
+                'restaurants': [_to_restaurant_dict(r) for r in restaurants_raw],
+                'categories': [_to_category_dict(c) for c in categories_raw],
+            }
+            cache.set(cache_key, cached, timeout=300)
+
+        return render_template('restaurant/list.html',
+                               restaurants=cached['restaurants'],
+                               categories=cached['categories'],
+                               keyword=keyword,
+                               current_category=category_id,
+                               sort_by=sort_by)
     except Exception as e:
-        # 记录错误
         current_app.logger.error(f"Error in list_restaurants: {e}")
-        # 显示一个通用的错误页面
         return render_template('errors/500.html'), 500
 
 @restaurant_bp.route('/<int:restaurant_id>')
 def restaurant_detail(restaurant_id):
     """餐厅详情页面"""
-    restaurant = Restaurant.query.get_or_404(restaurant_id)
-    
-    # 获取菜品分类
-    categories = db.session.query(Category).join(Dish).filter(
-        Dish.restaurant_id == restaurant_id,
-        Dish.available == True
-    ).distinct().all()
-    
-    # 获取推荐菜品
-    recommended_dishes = Dish.query.filter_by(
-        restaurant_id=restaurant_id,
-        is_recommended=True,
-        available=True
-    ).limit(6).all()
-    
-    # 获取所有菜品（按分类分组）
-    dishes_by_category = {}
-    for category in categories:
-        dishes = Dish.query.filter_by(
+    menu_cache_key = f'restaurant_menu:{restaurant_id}'
+    menu_cached = cache.get(menu_cache_key)
+
+    if menu_cached is None:
+        restaurant_obj = Restaurant.query.get_or_404(restaurant_id)
+
+        categories_raw = db.session.query(Category).join(Dish).filter(
+            Dish.restaurant_id == restaurant_id,
+            Dish.available == True
+        ).distinct().all()
+
+        recommended_raw = Dish.query.filter_by(
             restaurant_id=restaurant_id,
-            category_id=category.id,
+            is_recommended=True,
             available=True
-        ).order_by(Dish.sales_count.desc()).all()
-        dishes_by_category[category.name] = dishes
-    
-    # 获取评价
-    reviews = Review.query.filter_by(restaurant_id=restaurant_id)\
-                         .order_by(Review.created_at.desc())\
-                         .limit(10).all()
-    
-    # 获取用户购物车数量（如果已登录）
+        ).limit(6).all()
+
+        dishes_by_category = {}
+        for cat in categories_raw:
+            dishes = Dish.query.filter_by(
+                restaurant_id=restaurant_id,
+                category_id=cat.id,
+                available=True
+            ).order_by(Dish.sales_count.desc()).all()
+            dishes_by_category[cat.name] = [_to_dish_dict(d) for d in dishes]
+
+        menu_cached = {
+            'restaurant': _to_restaurant_dict(restaurant_obj),
+            'categories': [_to_category_dict(c) for c in categories_raw],
+            'recommended_dishes': [_to_dish_dict(d) for d in recommended_raw],
+            'dishes_by_category': dishes_by_category,
+        }
+        cache.set(menu_cache_key, menu_cached, timeout=600)
+
+    # 评价实时获取（数量少、时效性强）
+    reviews = Review.query.options(joinedload(Review.user))\
+                          .filter_by(restaurant_id=restaurant_id)\
+                          .order_by(Review.created_at.desc())\
+                          .limit(10).all()
+
+    # 购物车数量为用户私有数据，不缓存
     cart_count = 0
     if current_user.is_authenticated:
         cart_count = CartItem.query.filter_by(user_id=current_user.id)\
-                                  .join(Dish)\
-                                  .filter(Dish.restaurant_id == restaurant_id)\
-                                  .count()
-    
+                                   .join(Dish)\
+                                   .filter(Dish.restaurant_id == restaurant_id)\
+                                   .count()
+
     return render_template('restaurant/detail.html',
-                         restaurant=restaurant,
-                         categories=categories,
-                         recommended_dishes=recommended_dishes,
-                         dishes_by_category=dishes_by_category,
-                         reviews=reviews,
-                         cart_count=cart_count)
+                           restaurant=menu_cached['restaurant'],
+                           categories=menu_cached['categories'],
+                           recommended_dishes=menu_cached['recommended_dishes'],
+                           dishes_by_category=menu_cached['dishes_by_category'],
+                           reviews=reviews,
+                           cart_count=cart_count)
 
 @restaurant_bp.route('/<int:restaurant_id>/menu')
 def restaurant_menu(restaurant_id):
     """餐厅菜单页面（AJAX加载）"""
-    restaurant = Restaurant.query.get_or_404(restaurant_id)
     category_id = request.args.get('category_id', type=int)
-    
-    query = Dish.query.filter_by(restaurant_id=restaurant_id, available=True)
-    
-    if category_id:
-        query = query.filter_by(category_id=category_id)
-    
-    dishes = query.order_by(Dish.sales_count.desc()).all()
-    
-    return jsonify({
-        'dishes': [{
-            'id': dish.id,
-            'name': dish.name,
-            'description': dish.description,
-            'price': dish.price,
-            'original_price': dish.original_price,
-            'image': dish.image,
-            'sales_count': dish.sales_count,
-            'rating': dish.rating,
-            'is_recommended': dish.is_recommended,
-            'is_spicy': dish.is_spicy
-        } for dish in dishes]
-    })
+    ajax_cache_key = f'restaurant_menu_ajax:{restaurant_id}:{category_id}'
+    cached = cache.get(ajax_cache_key)
+
+    if cached is None:
+        Restaurant.query.get_or_404(restaurant_id)
+        query = Dish.query.filter_by(restaurant_id=restaurant_id, available=True)
+        if category_id:
+            query = query.filter_by(category_id=category_id)
+        dishes = query.order_by(Dish.sales_count.desc()).all()
+        cached = {
+            'dishes': [{
+                'id': d.id, 'name': d.name, 'description': d.description,
+                'price': d.price, 'original_price': d.original_price,
+                'image': d.image, 'sales_count': d.sales_count,
+                'rating': d.rating, 'is_recommended': d.is_recommended,
+                'is_spicy': d.is_spicy
+            } for d in dishes]
+        }
+        cache.set(ajax_cache_key, cached, timeout=600)
+
+    return jsonify(cached)
 
 @restaurant_bp.route('/search')
 def search_restaurants():
@@ -218,7 +274,7 @@ def add_restaurant():
         
         db.session.add(restaurant)
         db.session.commit()
-        
+        _invalidate_restaurant_cache()
         flash('餐厅添加成功', 'success')
         return redirect(url_for('restaurant.admin_restaurants'))
     
@@ -298,6 +354,7 @@ def edit_restaurant(restaurant_id):
                 restaurant.banner = change_data['banner']
             
             db.session.commit()
+            _invalidate_restaurant_cache(restaurant_id)
             flash('餐厅信息更新成功')
             return redirect(url_for('restaurant.admin_restaurants'))
         else:
@@ -361,6 +418,7 @@ def toggle_status(restaurant_id):
     if new_status in ['open', 'closed']:
         restaurant.status = new_status
         db.session.commit()
+        _invalidate_restaurant_cache(restaurant_id)
         return jsonify({'success': True, 'message': '状态更新成功'})
     
     return jsonify({'success': False, 'message': '无效的状态'})
@@ -376,8 +434,10 @@ def delete_restaurant(restaurant_id):
     restaurant = Restaurant.query.get_or_404(restaurant_id)
     
     try:
+        rid = restaurant.id
         db.session.delete(restaurant)
         db.session.commit()
+        _invalidate_restaurant_cache(rid)
         flash('餐厅删除成功')
     except Exception as e:
         db.session.rollback()
@@ -507,6 +567,7 @@ def approve_change_request(request_id):
         change_request.reviewer_id = current_user.id
         
         db.session.commit()
+        _invalidate_restaurant_cache(change_request.restaurant_id)
         return jsonify({'success': True, 'message': '审核通过'})
     
     except Exception as e:
@@ -575,6 +636,6 @@ def merchant_toggle_status(restaurant_id):
     
     restaurant.status = new_status
     db.session.commit()
-    
+    _invalidate_restaurant_cache(restaurant_id)
     status_text = '营业中' if new_status == 'open' else '已打烊'
     return jsonify({'success': True, 'message': f'商家状态已更新为：{status_text}'}) 

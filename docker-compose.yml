@@ -16,12 +16,28 @@ services:
       - "${MYSQL_PORT:-3307}:3306"  # 映射到3307避免与本地MySQL冲突
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init_mysql_data.py:/docker-entrypoint-initdb.d/init_data.py:ro
+      - ./database/init_mysql_data.py:/docker-entrypoint-initdb.d/init_data.py:ro
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - app_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存服务
+  redis:
+    image: redis:7.2-alpine
+    container_name: online_ordering_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,6 +63,9 @@ services:
       # 数据库URL（会自动使用上面的配置）
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-meituan_user}:${MYSQL_PASSWORD:-meituan_pass}@mysql:3306/${MYSQL_DATABASE:-meituan_waimai}?charset=utf8mb4
       
+      # Redis配置
+      REDIS_URL: redis://redis:6379/0
+
       TZ: Asia/Shanghai
     ports:
       - "${WEB_PORT:-5000}:5000"
@@ -60,11 +79,15 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app_network
 
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

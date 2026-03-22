@@ -6,4 +6,7 @@ PyMySQL==1.1.0
 cryptography==41.0.7
 Pillow==10.0.1
 gunicorn==21.2.0
+redis==5.0.1
+Flask-Caching==2.1.0
+flask-jwt-extended==4.6.0
 

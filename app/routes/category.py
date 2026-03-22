@@ -1,7 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models import Category
-from app import db
+from app import db, cache
+
+_CATEGORIES_CACHE_KEY = 'all_dish_categories'
+
+
+def _invalidate_category_cache():
+    cache.delete(_CATEGORIES_CACHE_KEY)
+    # 同时使餐厅列表缓存失效（列表页用到了分类筛选）
+    from app.routes.restaurant import _invalidate_restaurant_cache
+    _invalidate_restaurant_cache()
 
 category_bp = Blueprint('category', __name__, url_prefix='/category')
 
@@ -40,6 +49,7 @@ def add_category():
         new_category = Category(name=name, icon=icon, sort_order=sort_order)
         db.session.add(new_category)
         db.session.commit()
+        _invalidate_category_cache()
         flash('分类添加成功', 'success')
         return redirect(url_for('category.admin_categories'))
 
@@ -68,6 +78,7 @@ def edit_category(category_id):
         category.icon = icon
         category.sort_order = sort_order
         db.session.commit()
+        _invalidate_category_cache()
         flash('分类更新成功', 'success')
         return redirect(url_for('category.admin_categories'))
 
@@ -89,5 +100,6 @@ def delete_category(category_id):
 
     db.session.delete(category)
     db.session.commit()
+    _invalidate_category_cache()
     flash('分类删除成功', 'success')
     return redirect(url_for('category.admin_categories')) 

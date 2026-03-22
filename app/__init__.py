@@ -1,21 +1,43 @@
-from flask import Flask, render_template_string, redirect, url_for
+from flask import Flask, render_template_string, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
+from flask_caching import Cache
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
 import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+cache = Cache()
+jwt = JWTManager()
 
 def create_app(config_name='default'):
     app = Flask(__name__)
     
-    # 禁用模板缓存（开发时使用）
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.jinja_env.auto_reload = True
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+    # 开发模式下自动重载模板；生产环境由 FLASK_ENV 决定
+    is_dev = os.environ.get('FLASK_ENV', 'production') == 'development'
+    app.config['TEMPLATES_AUTO_RELOAD'] = is_dev
+    app.jinja_env.auto_reload = is_dev
+    # 生产环境开启静态资源浏览器缓存（1小时），开发环境关闭
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 if is_dev else 3600
     
     # 直接配置基本设置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-please-change-in-production'
+
+    # JWT 配置
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or app.config['SECRET_KEY']
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+    app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
+
+    # Redis 缓存配置：有 REDIS_URL 则用 Redis，否则回退到简单内存缓存（方便本地开发）
+    redis_url = os.environ.get('REDIS_URL')
+    if redis_url:
+        app.config['CACHE_TYPE'] = 'RedisCache'
+        app.config['CACHE_REDIS_URL'] = redis_url
+        app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 默认缓存 5 分钟
+    else:
+        app.config['CACHE_TYPE'] = 'SimpleCache'
+        app.config['CACHE_DEFAULT_TIMEOUT'] = 300
     
     # 生产环境安全检查：强制要求设置 SECRET_KEY
     # 判断是否为生产环境：检查 FLASK_ENV 或 DATABASE_URL（使用 MySQL 即为生产环境）
@@ -29,6 +51,15 @@ def create_app(config_name='default'):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
         f'sqlite:///{os.path.join(basedir, "..", "instance", "database.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # 生产环境启用数据库连接池优化
+    if not is_dev:
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+            'pool_size': 20,
+            'max_overflow': 10,
+            'pool_recycle': 3600,
+        }
     
     # 文件上传配置
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
@@ -44,6 +75,21 @@ def create_app(config_name='default'):
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    cache.init_app(app)
+    jwt.init_app(app)
+
+    # 统一 JWT 错误响应格式
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_data):
+        return jsonify({'code': 401, 'message': 'Token 已过期，请重新登录', 'data': None}), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return jsonify({'code': 401, 'message': '无效的 Token', 'data': None}), 401
+
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return jsonify({'code': 401, 'message': '未提供 Token，请先登录', 'data': None}), 401
 
     # 注册蓝图
     from app.routes.auth import auth_bp
@@ -61,6 +107,10 @@ def create_app(config_name='default'):
     app.register_blueprint(cart_bp)
     app.register_blueprint(restaurant_category_bp)
     app.register_blueprint(category_bp)
+
+    # 注册 RESTful API 蓝图
+    from app.api import api_bp
+    app.register_blueprint(api_bp)
 
     @app.route('/')
     def index():

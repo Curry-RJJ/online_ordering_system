@@ -1,7 +1,15 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models import RestaurantCategory, Restaurant
-from app import db
+from app import db, cache
+
+_RESTAURANT_CATEGORIES_KEY = 'all_restaurant_categories'
+
+
+def _invalidate_restaurant_category_cache():
+    cache.delete(_RESTAURANT_CATEGORIES_KEY)
+    from app.routes.restaurant import _invalidate_restaurant_cache
+    _invalidate_restaurant_cache()
 
 restaurant_category_bp = Blueprint('restaurant_category', __name__, url_prefix='/restaurant-category')
 
@@ -52,7 +60,7 @@ def add_category():
         
         db.session.add(category)
         db.session.commit()
-        
+        _invalidate_restaurant_category_cache()
         flash('餐厅分类添加成功')
         return redirect(url_for('restaurant_category.admin_categories'))
     
@@ -86,6 +94,7 @@ def edit_category(category_id):
         category.sort_order = request.form.get('sort_order', 0, type=int)
         
         db.session.commit()
+        _invalidate_restaurant_category_cache()
         flash('餐厅分类更新成功')
         return redirect(url_for('restaurant_category.admin_categories'))
     
@@ -109,19 +118,18 @@ def delete_category(category_id):
     
     db.session.delete(category)
     db.session.commit()
-    
+    _invalidate_restaurant_category_cache()
     flash('餐厅分类删除成功')
     return redirect(url_for('restaurant_category.admin_categories'))
 
 @restaurant_category_bp.route('/list')
 def get_categories():
     """获取所有餐厅分类（API）"""
-    categories = RestaurantCategory.query.order_by(RestaurantCategory.sort_order).all()
-    
-    return jsonify({
-        'categories': [{
-            'id': c.id,
-            'name': c.name,
-            'icon': c.icon
-        } for c in categories]
-    }) 
+    cached = cache.get(_RESTAURANT_CATEGORIES_KEY)
+    if cached is None:
+        categories = RestaurantCategory.query.order_by(RestaurantCategory.sort_order).all()
+        cached = {
+            'categories': [{'id': c.id, 'name': c.name, 'icon': c.icon} for c in categories]
+        }
+        cache.set(_RESTAURANT_CATEGORIES_KEY, cached, timeout=1800)
+    return jsonify(cached) 
