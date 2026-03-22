@@ -6,6 +6,7 @@ from app.services import cart_service
 from app.routes.cart import _create_orders, generate_order_no
 from app.api import api_bp
 from app.api.errors import ok, created, bad_request, not_found, forbidden
+from app.api.schemas import CreateOrderSchema
 
 
 def _order_dict(order: Order, include_items: bool = False) -> dict:
@@ -96,11 +97,13 @@ def api_create_order():
     user_id = int(get_jwt_identity())
     data = request.get_json(silent=True) or {}
 
-    address_id = data.get('address_id')
-    remark = data.get('remark', '')
+    errors = CreateOrderSchema().validate(data)
+    if errors:
+        return bad_request('请求参数错误', data=errors)
 
-    if not address_id:
-        return bad_request('address_id 不能为空')
+    cleaned = CreateOrderSchema().load(data)
+    address_id = cleaned['address_id']
+    remark = cleaned['remark']
 
     address = Address.query.filter_by(id=address_id, user_id=user_id).first()
     if not address:

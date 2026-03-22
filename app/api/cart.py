@@ -4,6 +4,7 @@ from app.models import Dish, Restaurant
 from app.services import cart_service
 from app.api import api_bp
 from app.api.errors import ok, bad_request, not_found
+from app.api.schemas import AddCartItemSchema, UpdateCartItemSchema
 
 
 def _build_cart_response(user_id: int) -> dict:
@@ -81,13 +82,13 @@ def api_add_to_cart():
     user_id = int(get_jwt_identity())
     data = request.get_json(silent=True) or {}
 
-    dish_id = data.get('dish_id')
-    quantity = data.get('quantity', 1)
+    errors = AddCartItemSchema().validate(data)
+    if errors:
+        return bad_request('请求参数错误', data=errors)
 
-    if not dish_id:
-        return bad_request('dish_id 不能为空')
-    if not isinstance(quantity, int) or quantity < 1:
-        return bad_request('quantity 必须为正整数')
+    cleaned = AddCartItemSchema().load(data)
+    dish_id = cleaned['dish_id']
+    quantity = cleaned['quantity']
 
     dish = Dish.query.get(dish_id)
     if not dish:
@@ -112,11 +113,12 @@ def api_update_cart_item(dish_id):
     """
     user_id = int(get_jwt_identity())
     data = request.get_json(silent=True) or {}
-    quantity = data.get('quantity')
 
-    if quantity is None or not isinstance(quantity, int) or quantity < 1:
-        return bad_request('quantity 必须为正整数')
+    errors = UpdateCartItemSchema().validate(data)
+    if errors:
+        return bad_request('请求参数错误', data=errors)
 
+    quantity = UpdateCartItemSchema().load(data)['quantity']
     current_cart = cart_service.get_cart(user_id)
     if dish_id not in current_cart:
         return not_found('该商品不在购物车中')

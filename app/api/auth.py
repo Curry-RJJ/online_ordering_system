@@ -8,6 +8,7 @@ from app.models import User
 from app import db
 from app.api import api_bp
 from app.api.errors import ok, created, bad_request, unauthorized, not_found
+from app.api.schemas import LoginSchema, RegisterSchema
 
 
 def _user_dict(user: User) -> dict:
@@ -29,15 +30,13 @@ def api_login():
     Body: { "username": "...", "password": "..." }
     Response: { access_token, refresh_token, user }
     """
-    data = request.get_json(silent=True)
-    if not data:
-        return bad_request('请求体不能为空')
+    data = request.get_json(silent=True) or {}
+    errors = LoginSchema().validate(data)
+    if errors:
+        return bad_request('请求参数错误', data=errors)
 
-    username = (data.get('username') or '').strip()
-    password = data.get('password') or ''
-
-    if not username or not password:
-        return bad_request('用户名和密码不能为空')
+    username = data['username'].strip()
+    password = data['password']
 
     user = User.query.filter_by(username=username).first()
     if not user or not check_password_hash(user.password, password):
@@ -60,26 +59,22 @@ def api_register():
     ---
     Body: { "username": "...", "password": "...", "phone": "..." }
     """
-    data = request.get_json(silent=True)
-    if not data:
-        return bad_request('请求体不能为空')
+    data = request.get_json(silent=True) or {}
+    errors = RegisterSchema().validate(data)
+    if errors:
+        return bad_request('请求参数错误', data=errors)
 
-    username = (data.get('username') or '').strip()
-    password = data.get('password') or ''
-    phone = (data.get('phone') or '').strip()
-
-    if not username or len(username) < 3:
-        return bad_request('用户名至少3个字符')
-    if not password or len(password) < 6:
-        return bad_request('密码至少6个字符')
+    cleaned = RegisterSchema().load(data)
+    username = cleaned['username'].strip()
 
     if User.query.filter_by(username=username).first():
         return bad_request('用户名已存在')
 
     user = User(
         username=username,
-        password=generate_password_hash(password),
-        phone=phone,
+        password=generate_password_hash(cleaned['password']),
+        phone=cleaned.get('phone', ''),
+        email=cleaned.get('email', ''),
         role='user'
     )
     db.session.add(user)
