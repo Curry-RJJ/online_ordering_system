@@ -82,8 +82,9 @@ class Category(db.Model):
 class Dish(db.Model):
     """菜品"""
     id = db.Column(db.Integer, primary_key=True)
-    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    # 索引：菜单页按餐厅查菜品是最高频操作，available 用于上下架过滤
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False, index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), index=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
@@ -95,7 +96,7 @@ class Dish(db.Model):
     rating = db.Column(db.Float, default=5.0)  # 评分
     is_recommended = db.Column(db.Boolean, default=False)  # 是否推荐
     is_spicy = db.Column(db.Boolean, default=False)  # 是否辣
-    available = db.Column(db.Boolean, default=True)
+    available = db.Column(db.Boolean, default=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # 菜品订单项
@@ -114,9 +115,10 @@ class CartItem(db.Model):
 class Order(db.Model):
     """订单"""
     id = db.Column(db.Integer, primary_key=True)
-    order_no = db.Column(db.String(32), unique=True, nullable=False)  # 订单号
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False)
+    order_no = db.Column(db.String(32), unique=True, nullable=False)  # 订单号（unique 自带索引）
+    # 索引：订单列表按用户/餐厅/状态三个维度查询，是最高频的后台操作
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False, index=True)
     
     # 收货信息
     delivery_name = db.Column(db.String(50), nullable=False)
@@ -128,12 +130,12 @@ class Order(db.Model):
     delivery_fee = db.Column(db.Float, default=0)  # 配送费
     total_amount = db.Column(db.Float, nullable=False)  # 总金额
     
-    # 订单状态
-    status = db.Column(db.String(20), default='pending')  # pending/confirmed/preparing/delivering/completed/cancelled
-    payment_status = db.Column(db.String(20), default='unpaid')  # unpaid/paid/refunded
+    # 订单状态；索引：Celery Beat 定时清理过期 pending 订单时全表过滤 status
+    status = db.Column(db.String(20), default='pending', index=True)
+    payment_status = db.Column(db.String(20), default='unpaid')
     
-    # 时间信息
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # 时间信息；索引：cleanup_expired_orders 按 created_at 范围过滤
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     confirmed_at = db.Column(db.DateTime)
     delivered_at = db.Column(db.DateTime)
     
@@ -146,8 +148,9 @@ class Order(db.Model):
 class OrderItem(db.Model):
     """订单项"""
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
-    dish_id = db.Column(db.Integer, db.ForeignKey('dish.id'), nullable=False)
+    # 索引：查看订单详情时按 order_id 取所有订单项，级联删除时也走此索引
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False, index=True)
+    dish_id = db.Column(db.Integer, db.ForeignKey('dish.id'), nullable=False, index=True)
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)  # 下单时的价格
     subtotal = db.Column(db.Float, nullable=False)  # 小计
@@ -155,8 +158,9 @@ class OrderItem(db.Model):
 class Review(db.Model):
     """评价"""
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False)
+    # 索引：餐厅详情页按 restaurant_id 取评价列表
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False, index=True)
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
     
     rating = db.Column(db.Integer, nullable=False)  # 1-5星
@@ -197,13 +201,14 @@ class MerchantApplication(db.Model):
 class RestaurantChangeRequest(db.Model):
     """商家和菜品修改审核请求"""
     id = db.Column(db.Integer, primary_key=True)
-    merchant_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    request_type = db.Column(db.String(20), nullable=False)  # restaurant_edit/dish_add/dish_edit/dish_delete
-    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))
+    merchant_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    # 索引：审核队列页面按 status=pending 过滤，按类型分类展示
+    request_type = db.Column(db.String(20), nullable=False, index=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), index=True)
     dish_id = db.Column(db.Integer, db.ForeignKey('dish.id'))
     change_data = db.Column(db.Text)  # JSON格式存储修改的数据
     reason = db.Column(db.Text)  # 修改原因
-    status = db.Column(db.String(20), default='pending')  # pending/approved/rejected
+    status = db.Column(db.String(20), default='pending', index=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     reviewed_at = db.Column(db.DateTime)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
