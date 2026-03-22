@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from flask_caching import Cache
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from datetime import timedelta
 import os
 
@@ -10,6 +12,12 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 cache = Cache()
 jwt = JWTManager()
+# Limiter 单例：装饰器在各模块直接 import 使用
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=['200 per minute'],   # 全局兜底：每 IP 每分钟 200 次
+    storage_uri=os.environ.get('REDIS_URL', 'memory://'),
+)
 
 def create_app(config_name='default'):
     app = Flask(__name__)
@@ -72,11 +80,25 @@ def create_app(config_name='default'):
     os.makedirs(os.path.join(basedir, 'static', 'images', 'logos'), exist_ok=True)
     os.makedirs(os.path.join(basedir, 'static', 'images', 'banners'), exist_ok=True)
 
+    # 限流存储：有 Redis 用 Redis，否则降级到内存（开发/测试环境）
+    redis_url = os.environ.get('REDIS_URL')
+    limiter._storage_uri = redis_url if redis_url else 'memory://'
+
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     cache.init_app(app)
     jwt.init_app(app)
+    limiter.init_app(app)
+
+    # 统一限流超出响应格式（429）
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return jsonify({
+            'code': 429,
+            'message': f'请求过于频繁，{e.description}',
+            'data': None
+        }), 429
 
     # 统一 JWT 错误响应格式
     @jwt.expired_token_loader

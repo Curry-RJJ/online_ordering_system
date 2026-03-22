@@ -5,6 +5,7 @@ from app.services import cart_service
 from app.api import api_bp
 from app.api.errors import ok, bad_request, not_found
 from app.api.schemas import AddCartItemSchema, UpdateCartItemSchema
+from app import limiter
 
 
 def _build_cart_response(user_id: int) -> dict:
@@ -73,6 +74,7 @@ def api_get_cart():
 
 @api_bp.route('/cart/items', methods=['POST'])
 @jwt_required()
+@limiter.limit('60 per minute', error_message='添加购物车过于频繁，请稍后再试')
 def api_add_to_cart():
     """
     添加商品到购物车

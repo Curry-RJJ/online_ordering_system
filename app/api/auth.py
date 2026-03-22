@@ -5,7 +5,7 @@ from flask_jwt_extended import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.models import User
-from app import db
+from app import db, limiter
 from app.api import api_bp
 from app.api.errors import ok, created, bad_request, unauthorized, not_found
 from app.api.schemas import LoginSchema, RegisterSchema
@@ -23,6 +23,7 @@ def _user_dict(user: User) -> dict:
 
 
 @api_bp.route('/auth/login', methods=['POST'])
+@limiter.limit('10 per minute', error_message='登录尝试过于频繁，请1分钟后重试')
 def api_login():
     """
     用户登录
@@ -53,6 +54,7 @@ def api_login():
 
 
 @api_bp.route('/auth/register', methods=['POST'])
+@limiter.limit('5 per minute', error_message='注册请求过于频繁，请1分钟后重试')
 def api_register():
     """
     用户注册

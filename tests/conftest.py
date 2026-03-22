@@ -41,6 +41,7 @@ def app(monkeypatch, tmp_path):
         'TESTING': True,
         'CACHE_TYPE': 'SimpleCache',
         'WTF_CSRF_ENABLED': False,
+        'RATELIMIT_ENABLED': False,   # 测试环境完全禁用限流
     })
 
     with application.app_context():

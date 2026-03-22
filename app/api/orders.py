@@ -1,7 +1,8 @@
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_limiter.util import get_remote_address
 from app.models import Order, OrderItem, Address, Dish, Restaurant
-from app import db
+from app import db, limiter
 from app.services import cart_service
 from app.routes.cart import _create_orders, generate_order_no
 from app.api import api_bp
@@ -93,6 +94,7 @@ def api_get_order(order_id):
 
 @api_bp.route('/orders', methods=['POST'])
 @jwt_required()
+@limiter.limit('10 per minute', error_message='下单过于频繁，请稍后再试')
 def api_create_order():
     """
     从购物车创建订单（结算）
