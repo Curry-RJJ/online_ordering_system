@@ -1,0 +1,29 @@
+version: '3.8'
+
+# 独立测试环境：SQLite 内存数据库 + fakeredis，无需启动 MySQL / Redis
+# 运行方式：docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+services:
+  test:
+    build: .
+    container_name: online_ordering_test
+    # 覆盖生产启动脚本，直接运行 pytest
+    entrypoint: ["python", "-m", "pytest"]
+    command: >
+      tests/
+      -v
+      --cov=app
+      --cov-report=term-missing
+      --cov-report=html:/app/htmlcov
+      --tb=short
+    environment:
+      FLASK_ENV: testing
+      FLASK_APP: run.py
+      SECRET_KEY: test-secret-key-for-ci
+      JWT_SECRET_KEY: test-jwt-secret-for-ci
+      # 不设置 DATABASE_URL / MYSQL_HOST，让 app 降级到 SQLite
+    volumes:
+      # 将本地代码挂载进容器，代码改动立即生效（无需重新 build）
+      - .:/app
+      # 覆盖率 HTML 报告输出到本地
+      - ./htmlcov:/app/htmlcov
