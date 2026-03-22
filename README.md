@@ -1,270 +1,355 @@
-# 🍽️ 在线订餐系统 (Online Ordering System)
+# 在线订餐系统
 
-一个功能完善的美团风格在线订餐系统，基于 Flask 框架开发，支持 Docker 一键部署。
+> 美团外卖风格的全栈在线订餐平台，基于 Flask 构建，实现了完整的前后端分离 RESTful API 层、JWT 无状态认证、Redis 缓存与购物车、Celery 异步任务队列、接口限流等生产级后端特性，全程 Docker 容器化部署。
 
-## ✨ 主要功能
-
-### 👤 用户功能
-- **用户注册/登录**：支持用户注册、登录、个人信息管理
-- **餐厅浏览**：按分类浏览餐厅，查看餐厅详情和菜品
-- **菜品搜索**：搜索和筛选菜品
-- **购物车**：添加、修改、删除购物车商品
-- **在线下单**：创建订单、查看订单历史
-- **订单管理**：查看订单详情、订单状态
-
-### 🔐 管理员功能
-- **餐厅管理**：添加、编辑、删除餐厅
-- **菜品管理**：管理菜品信息、价格、图片
-- **分类管理**：管理餐厅分类和菜品分类
-- **订单管理**：查看和处理所有订单
-- **用户管理**：管理用户信息和权限
-
-### 🎨 特色功能
-- **美团风格 UI**：现代化、响应式界面设计
-- **图片上传**：支持餐厅 Logo、菜品图片、横幅图片上传
-- **多数据库支持**：支持 SQLite 和 MySQL 数据库
-- **Docker 部署**：一键启动完整应用栈
-
-## 🚀 快速开始
-
-### 方式一：Docker 部署（推荐）
-
-1. **克隆项目**
-```bash
-git clone https://github.com/Curry-RJJ/online_ordering_system.git
-cd online_ordering_system
-```
-
-2. **启动服务**
-```bash
-# Windows
-docker-compose up -d
-
-# Linux/Mac
-docker-compose up -d
-```
-
-3. **访问应用**
-- 应用地址：http://localhost:5000
-- 管理员账号：`admin` / `admin123`
-- 测试用户：`testuser` / `123456`
-
-### 方式二：本地开发部署
-
-#### 环境要求
-- Python 3.8+
-- MySQL 5.7+ (可选，也可使用 SQLite)
-
-#### 安装步骤
-
-1. **克隆项目**
-```bash
-git clone https://github.com/Curry-RJJ/online_ordering_system.git
-cd online_ordering_system
-```
-
-2. **创建虚拟环境**
-```bash
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Linux/Mac
-source venv/bin/activate
-```
-
-3. **安装依赖**
-```bash
-pip install -r requirements.txt
-```
-
-4. **初始化数据库**
-
-**使用 SQLite（推荐开发环境）：**
-```bash
-python run_meituan.py init
-# 选择 1 (SQLite)
-```
-
-**使用 MySQL（推荐生产环境）：**
-```bash
-# 确保 MySQL 服务已启动
-python run_meituan.py init
-# 选择 2 (MySQL)
-```
-
-5. **启动应用**
-
-```bash
-# 使用 SQLite
-python run_meituan.py
-
-# 使用 MySQL
-python run_meituan.py mysql
-```
-
-6. **访问应用**
-- 访问 http://localhost:5000
-- 管理员账号：`admin` / `admin123`
-- 测试用户：`testuser` / `123456`
-
-## 📁 项目结构
-
-```
-online_ordering_system/
-├── app/                        # 应用主目录
-│   ├── __init__.py            # 应用初始化
-│   ├── models.py              # 数据模型
-│   ├── errors.py              # 错误处理
-│   ├── utils.py               # 工具函数
-│   ├── routes/                # 路由模块
-│   │   ├── auth.py           # 用户认证
-│   │   ├── restaurant.py     # 餐厅管理
-│   │   ├── dish.py           # 菜品管理
-│   │   ├── order.py          # 订单管理
-│   │   ├── cart.py           # 购物车
-│   │   └── category.py       # 分类管理
-│   ├── templates/             # HTML 模板
-│   └── static/                # 静态资源
-│       ├── css/              # 样式文件
-│       ├── js/               # JavaScript
-│       └── images/           # 图片资源
-├── docs/                      # 文档目录
-├── migrations/                # 数据库迁移
-├── instance/                  # 实例配置（数据库文件）
-├── logs/                      # 日志文件
-├── config.py                  # SQLite 配置
-├── config_mysql.py           # MySQL 配置
-├── run.py                     # 基础启动脚本
-├── run_meituan.py            # 完整启动脚本
-├── init_data.py              # SQLite 数据初始化
-├── init_mysql_data.py        # MySQL 数据初始化
-├── docker-compose.yml        # Docker 编排配置
-├── Dockerfile                 # Docker 镜像配置
-├── requirements.txt          # Python 依赖
-└── README.md                  # 项目说明
-
-```
-
-## 🛠️ 技术栈
-
-### 后端
-- **Flask** - Web 框架
-- **SQLAlchemy** - ORM 数据库操作
-- **Flask-Login** - 用户认证
-- **PyMySQL** - MySQL 数据库驱动
-- **Werkzeug** - 密码加密和文件上传
-
-### 前端
-- **HTML5/CSS3** - 页面结构和样式
-- **Bootstrap 5** - 响应式布局
-- **JavaScript** - 交互逻辑
-- **Jinja2** - 模板引擎
-
-### 数据库
-- **SQLite** - 开发环境（默认）
-- **MySQL 8.0** - 生产环境
-
-### 部署
-- **Docker** - 容器化部署
-- **Docker Compose** - 多容器编排
-- **Gunicorn** - WSGI 服务器
-
-## 📊 数据库设计
-
-主要数据表：
-- `user` - 用户表
-- `restaurant` - 餐厅表
-- `restaurant_category` - 餐厅分类表
-- `category` - 菜品分类表
-- `dish` - 菜品表
-- `order` - 订单表
-- `order_item` - 订单项表
-
-## 🔧 配置说明
-
-### 环境变量配置
-
-创建 `.env` 文件（参考 `.env.example`）：
-
-```bash
-# Flask 配置
-FLASK_APP=run.py
-FLASK_ENV=production
-SECRET_KEY=your-secret-key
-
-# MySQL 配置
-MYSQL_HOST=mysql
-MYSQL_PORT=3306
-MYSQL_USER=meituan_user
-MYSQL_PASSWORD=your-password
-MYSQL_DATABASE=meituan_waimai
-MYSQL_ROOT_PASSWORD=root-password
-
-# Web 服务
-WEB_PORT=5000
-```
-
-### Docker 配置
-
-修改 `docker-compose.yml` 中的环境变量即可。
-
-## 📖 使用说明
-
-详细使用说明请查看：
-- [使用说明](docs/使用说明.md)
-- [CRUD 功能说明](docs/CRUD功能说明.md)
-- [Docker 部署说明](README_DOCKER.md)
-- [图片上传功能说明](docs/图片上传功能说明.md)
-
-## 🐛 常见问题
-
-### 1. 端口被占用
-```bash
-# 修改 docker-compose.yml 中的端口映射
-ports:
-  - "8080:5000"  # 改为其他端口
-```
-
-### 2. MySQL 连接失败
-```bash
-# 检查 MySQL 服务状态
-docker-compose logs mysql
-
-# 重启 MySQL 服务
-docker-compose restart mysql
-```
-
-### 3. 图片上传失败
-确保 `app/static/images/` 目录有写入权限。
-
-## 📝 开发计划
-
-- [ ] 添加支付功能
-- [ ] 实时订单通知
-- [ ] 外卖配送追踪
-- [ ] 用户评价系统
-- [ ] 优惠券功能
-- [ ] 数据统计分析
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📄 许可证
-
-MIT License
-
-## 👨‍💻 作者
-
-Curry-RJJ
-
-## 🔗 相关链接
-
-- [GitHub 仓库](https://github.com/Curry-RJJ/online_ordering_system)
-- [问题反馈](https://github.com/Curry-RJJ/online_ordering_system/issues)
+[![Tests](https://img.shields.io/badge/tests-68%20passed-brightgreen)](./tests)
+[![Coverage](https://img.shields.io/badge/coverage-39%25-yellow)](./htmlcov)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://python.org)
+[![Docker](https://img.shields.io/badge/docker-compose-2496ED)](./docker-compose.yml)
 
 ---
 
-⭐ 如果这个项目对你有帮助，请给它一个星标！
+## 目录
+
+- [技术亮点](#技术亮点)
+- [系统架构](#系统架构)
+- [技术栈](#技术栈)
+- [性能数据](#性能数据)
+- [API 文档](#api-文档)
+- [快速启动](#快速启动)
+- [运行测试](#运行测试)
+- [项目结构](#项目结构)
+- [环境变量](#环境变量)
+
+---
+
+## 技术亮点
+
+### 1. RESTful API + JWT 双层认证
+
+在不破坏原有 Jinja2 服务端渲染的前提下，新增一套 `/api/v1/` 前缀的标准 RESTful 接口层，实现**前后端分离架构**并行共存：
+
+- **Access Token**：1 小时有效期，用于普通请求鉴权
+- **Refresh Token**：30 天有效期，静默刷新不打断用户体验
+- 统一 JSON 响应格式：`{"code": 200, "message": "...", "data": {...}}`
+- 自定义 JWT 错误处理，所有 401/403 均返回一致结构
+
+### 2. Redis 多场景应用
+
+Redis 在本项目承担三个独立职责，形成完整技术闭环：
+
+| 职责 | 实现方式 | 说明 |
+|------|----------|------|
+| **购物车存储** | Redis Hash + 7 天滑动过期 | 替代 Session，支持横向扩展 |
+| **接口缓存** | Flask-Caching + 版本号失效法 | 餐厅列表 5 min、菜单 10 min |
+| **限流计数器** | flask-limiter + Redis 后端 | 多实例共享，重启不丢失 |
+
+### 3. Celery 异步任务队列
+
+将耗时操作从请求链路中解耦，**主流程不阻塞**：
+
+| 任务 | 触发时机 | 容错机制 |
+|------|----------|----------|
+| `notify_new_order` | 用户下单成功 | 最多重试 3 次，间隔 60s |
+| `notify_order_status_change` | 订单状态变更 | 最多重试 3 次，间隔 60s |
+| `cleanup_expired_orders` | Celery Beat 每小时整点 | 自动取消 30 min 未处理订单 |
+
+Celery 不可用时自动跳过（`try/except` + `_CELERY_ENABLED` 标志），保证主流程零影响。
+
+### 4. 输入校验层（marshmallow）
+
+所有 API 入口通过 Schema 校验，非法请求在业务逻辑前被拦截：
+
+- 手机号格式正则校验
+- 价格 / 数量范围校验
+- 字段必填性与类型校验
+- 统一 `422 Unprocessable Entity` 错误格式
+
+### 5. 数据库性能优化
+
+- **12 个索引**覆盖高频查询字段（`restaurant_id`, `status`, `user_id`, `created_at` 等）
+- **2 个复合索引**：`(restaurant_id, available)`、`(status, created_at)` 针对多条件过滤优化
+- 使用 `joinedload` 彻底消除评价列表的 N+1 查询问题
+- 生产环境数据库连接池：`pool_size=20, max_overflow=10, pool_recycle=3600`
+
+### 6. 接口限流（flask-limiter）
+
+防暴力破解与恶意刷接口：
+
+| 接口 | 限制规则 | 防护目的 |
+|------|----------|----------|
+| `POST /api/v1/auth/login` | 10 次/分钟 | 防密码暴力破解 |
+| `POST /api/v1/auth/register` | 5 次/分钟 | 防批量注册刷号 |
+| `POST /api/v1/orders` | 10 次/分钟 | 防重复刷单 |
+| `POST /api/v1/cart/items` | 60 次/分钟 | 正常操作宽松限制 |
+| 全局兜底 | 200 次/分钟 | 所有接口保底保护 |
+
+---
+
+## 系统架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Client                               │
+│              Browser / Mobile / API Client                  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ HTTP
+┌──────────────────────▼──────────────────────────────────────┐
+│                   Flask Application                         │
+│  ┌──────────────────────┐  ┌──────────────────────────────┐ │
+│  │  Jinja2 Routes       │  │  RESTful API (/api/v1/)      │ │
+│  │  (Server Rendering)  │  │  JWT Auth + marshmallow      │ │
+│  └──────────────────────┘  │  flask-limiter 限流          │ │
+│                            └──────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              Service Layer                           │   │
+│  │  cart_service  │  Flask-Caching  │  SQLAlchemy ORM  │   │
+│  └──────────────────────────────────────────────────────┘   │
+└────────────┬────────────────────────┬───────────────────────┘
+             │                        │
+┌────────────▼──────┐    ┌────────────▼──────────────────────┐
+│      MySQL 8.0    │    │           Redis 7.2               │
+│  - 业务数据存储   │    │  - 购物车 Hash（7天TTL）          │
+│  - 12个查询索引   │    │  - 接口缓存（5~10 min TTL）      │
+│  - 连接池复用     │    │  - 限流计数器                     │
+└───────────────────┘    │  - Celery Broker / Backend       │
+                         └───────────────────────────────────┘
+                                        │
+                         ┌──────────────▼──────────────────┐
+                         │    Celery Worker + Beat         │
+                         │  - 异步订单通知（3次重试）      │
+                         │  - 定时清理过期订单（每小时）   │
+                         └─────────────────────────────────┘
+```
+
+---
+
+## 技术栈
+
+| 分类 | 技术 | 版本 | 用途 |
+|------|------|------|------|
+| **Web 框架** | Flask | 2.3.x | 核心框架 |
+| **ORM** | Flask-SQLAlchemy | 3.x | 数据库操作 |
+| **认证** | Flask-JWT-Extended | 4.6.0 | JWT 无状态认证 |
+| **缓存** | Flask-Caching | 2.1.0 | 接口缓存 |
+| **限流** | flask-limiter | 3.5.0 | API 限流 |
+| **校验** | marshmallow | 3.20.x | 请求参数校验 |
+| **消息队列** | Celery | 5.3.4 | 异步任务 |
+| **缓存/队列** | Redis | 7.2 | 多场景存储 |
+| **数据库** | MySQL | 8.0 | 生产数据库 |
+| **服务器** | Gunicorn | - | WSGI 服务 |
+| **容器化** | Docker + Compose | - | 环境编排 |
+| **测试** | pytest + pytest-cov | 7.4.3 | 单元/集成测试 |
+| **测试辅助** | fakeredis | 2.20.0 | Redis Mock |
+
+---
+
+## 性能数据
+
+### 测试覆盖
+
+```
+测试套件：68 个测试用例，全部通过（0 failed）
+运行时间：~44 秒（Docker 环境）
+
+覆盖模块：
+  app/api/auth.py          78%   ← 认证 API
+  app/api/cart.py          84%   ← 购物车 API
+  app/api/orders.py        74%   ← 订单 API
+  app/api/schemas.py       95%   ← 输入校验
+  app/services/cart_service.py  72%   ← 购物车服务
+  app/models.py            99%   ← 数据模型
+```
+
+### 缓存效果
+
+| 场景 | 无缓存（MySQL直查） | 有缓存（Redis命中） | 提升 |
+|------|-------------------|-------------------|------|
+| 餐厅列表（50条） | ~80ms | ~3ms | **~27x** |
+| 餐厅菜单详情 | ~60ms | ~2ms | **~30x** |
+
+> 数据基于本地 Docker 环境单次请求测量，仅作参考。
+
+### 数据库索引
+
+| 索引 | 类型 | 优化场景 |
+|------|------|----------|
+| `idx_dish_restaurant_id` | 单列 | 餐厅菜单查询 |
+| `idx_dish_restaurant_available` | 复合 | 餐厅上架菜品过滤 |
+| `idx_order_user_id` | 单列 | 用户订单历史 |
+| `idx_order_status_created` | 复合 | Celery 定时清理过期订单 |
+| `idx_review_restaurant_id` | 单列 | 餐厅评价列表 |
+| *(共 12 个)* | - | 覆盖所有高频查询路径 |
+
+---
+
+## API 文档
+
+基础地址：`http://localhost:5000/api/v1`
+
+### 认证接口
+
+| 方法 | 路径 | 说明 | 限流 |
+|------|------|------|------|
+| POST | `/auth/login` | 用户登录，返回 Access + Refresh Token | 10次/min |
+| POST | `/auth/register` | 用户注册 | 5次/min |
+| GET | `/auth/me` | 获取当前用户信息（需 JWT） | - |
+| POST | `/auth/refresh` | 刷新 Access Token（需 Refresh Token） | - |
+
+### 餐厅 & 菜品
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/restaurants` | 餐厅列表（Redis 缓存 5min） |
+| GET | `/restaurants/<id>` | 餐厅详情（Redis 缓存 10min） |
+| GET | `/restaurants/<id>/menu` | 餐厅菜单（Redis 缓存 10min） |
+
+### 购物车
+
+| 方法 | 路径 | 说明 | 限流 |
+|------|------|------|------|
+| GET | `/cart` | 查看购物车（按餐厅分组） | - |
+| POST | `/cart/items` | 添加商品 | 60次/min |
+| PUT | `/cart/items/<dish_id>` | 修改数量 | - |
+| DELETE | `/cart/items/<dish_id>` | 移除商品 | - |
+| DELETE | `/cart` | 清空购物车 | - |
+
+### 订单
+
+| 方法 | 路径 | 说明 | 限流 |
+|------|------|------|------|
+| POST | `/orders` | 提交订单（触发 Celery 异步通知） | 10次/min |
+| GET | `/orders` | 订单列表（仅自己的订单） | - |
+| GET | `/orders/<id>` | 订单详情 | - |
+| POST | `/orders/<id>/cancel` | 取消订单（仅 pending 状态可取消） | - |
+
+### 统一响应格式
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": { ... }
+}
+```
+
+**错误码一览：**
+
+| code | HTTP 状态 | 含义 |
+|------|-----------|------|
+| 200 | 200 | 成功 |
+| 201 | 201 | 创建成功 |
+| 400 | 400 | 业务逻辑错误（如状态不允许） |
+| 401 | 401 | 未认证 / Token 过期 |
+| 403 | 403 | 无权限 |
+| 404 | 404 | 资源不存在 |
+| 422 | 422 | 请求参数校验失败 |
+| 429 | 429 | 请求过于频繁 |
+
+---
+
+## 快速启动
+
+### Docker（推荐）
+
+```bash
+git clone https://github.com/Curry-RJJ/online_ordering_system.git
+cd online_ordering_system
+
+# 一键启动（Flask + MySQL + Redis + Celery Worker + Celery Beat）
+docker-compose up -d
+```
+
+访问 http://localhost:5000
+
+| 账号 | 密码 | 角色 |
+|------|------|------|
+| admin | admin123 | 管理员 |
+| testuser | 123456 | 普通用户 |
+
+### 服务说明
+
+```yaml
+web          # Flask 应用（Gunicorn，5 workers）
+mysql        # MySQL 8.0（持久化存储）
+redis        # Redis 7.2（缓存 + 队列，256MB LRU）
+celery_worker # Celery 任务消费者
+celery_beat  # Celery 定时任务调度器
+```
+
+---
+
+## 运行测试
+
+```bash
+# 在 Docker 中运行（隔离环境，不影响生产数据）
+docker-compose -f docker-compose.test.yml run --rm test
+
+# 测试策略
+# - SQLite 临时文件数据库（每个测试函数独立）
+# - fakeredis 模拟 Redis（无需真实连接）
+# - RATELIMIT_ENABLED=False 禁用限流干扰
+# - _CELERY_ENABLED=False 禁用 Celery 任务
+```
+
+预期输出：
+
+```
+68 passed in ~44s
+```
+
+---
+
+## 项目结构
+
+```
+online_ordering_system/
+├── app/
+│   ├── __init__.py          # 应用工厂：db/jwt/cache/limiter 初始化
+│   ├── models.py            # SQLAlchemy 模型（12个查询索引）
+│   ├── api/                 # RESTful API 层（/api/v1/）
+│   │   ├── auth.py          # JWT 认证接口
+│   │   ├── cart.py          # 购物车接口
+│   │   ├── orders.py        # 订单接口
+│   │   ├── restaurants.py   # 餐厅/菜单接口
+│   │   ├── schemas.py       # marshmallow 校验 Schema
+│   │   └── errors.py        # 统一响应工具函数
+│   ├── routes/              # Jinja2 服务端渲染路由
+│   ├── services/
+│   │   └── cart_service.py  # 购物车业务逻辑（Redis Hash）
+│   └── tasks/
+│       ├── __init__.py      # Celery 工厂函数
+│       └── order_tasks.py   # 订单异步任务
+├── tests/
+│   ├── conftest.py          # pytest fixtures（fakeredis/SQLite/monkeypatch）
+│   ├── test_auth_api.py     # 认证 API 测试
+│   ├── test_cart_api.py     # 购物车 API 测试
+│   ├── test_order_api.py    # 订单 API 测试
+│   └── test_schemas.py      # 输入校验单元测试
+├── database/
+│   └── add_indexes.sql      # 生产环境索引迁移脚本
+├── docker-compose.yml       # 生产环境编排（5个服务）
+├── docker-compose.test.yml  # 测试环境编排（隔离）
+├── Dockerfile
+├── celery_worker.py         # Celery Worker 入口
+├── pytest.ini
+└── requirements.txt
+```
+
+---
+
+## 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `SECRET_KEY` | *(必填，生产)* | Flask Session 密钥 |
+| `JWT_SECRET_KEY` | 同 SECRET_KEY | JWT 签名密钥 |
+| `DATABASE_URL` | SQLite | 数据库连接串（生产用 MySQL） |
+| `REDIS_URL` | `redis://redis:6379/0` | Redis 连接串 |
+| `FLASK_ENV` | `production` | 运行环境 |
+
+---
+
+## 许可证
+
+MIT License
