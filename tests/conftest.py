@@ -46,6 +46,13 @@ def app(monkeypatch, tmp_path):
     with application.app_context():
         db.create_all()
         _seed()
+
+        # 测试环境关闭 Celery（无 Redis Broker 可连），避免连接超时拖慢测试
+        import app.api.orders as _orders_mod
+        import app.routes.order as _order_route_mod
+        monkeypatch.setattr(_orders_mod, '_CELERY_ENABLED', False)
+        monkeypatch.setattr(_order_route_mod, '_CELERY_ENABLED', False)
+
         yield application
         db.session.remove()
         db.drop_all()

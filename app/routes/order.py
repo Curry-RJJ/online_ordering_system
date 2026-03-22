@@ -3,6 +3,11 @@ from flask_login import login_required, current_user
 from app.models import Order, Dish, Restaurant, OrderItem
 from app import db
 from datetime import datetime
+try:
+    from app.tasks.order_tasks import notify_order_status_change as _notify_status
+    _CELERY_ENABLED = True
+except Exception:
+    _CELERY_ENABLED = False
 
 order_bp = Blueprint('order', __name__, url_prefix='/order')
 
@@ -176,6 +181,20 @@ def update_status(order_id):
     
     order.status = new_status
     db.session.commit()
+
+    # 异步通知用户订单状态变更，Celery 不可用时降级跳过
+    if _CELERY_ENABLED:
+        try:
+            user_phone = order.user.phone if order.user and order.user.phone else ''
+            _notify_status.delay(
+                order_id=order.id,
+                order_no=order.order_no,
+                new_status=new_status,
+                user_phone=user_phone,
+            )
+        except Exception:
+            pass
+
     flash('订单状态已更新')
     return redirect(url_for('order.list_orders'))
 

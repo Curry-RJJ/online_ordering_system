@@ -7,6 +7,11 @@ from app.routes.cart import _create_orders, generate_order_no
 from app.api import api_bp
 from app.api.errors import ok, created, bad_request, not_found, forbidden
 from app.api.schemas import CreateOrderSchema
+try:
+    from app.tasks.order_tasks import notify_new_order as _notify_new_order
+    _CELERY_ENABLED = True
+except Exception:
+    _CELERY_ENABLED = False
 
 
 def _order_dict(order: Order, include_items: bool = False) -> dict:
@@ -123,6 +128,22 @@ def api_create_order():
     latest_orders = Order.query.filter_by(user_id=user_id) \
                                .order_by(Order.created_at.desc()) \
                                .limit(10).all()
+
+    # 异步通知：每笔订单触发一次商家通知任务，不阻塞当前请求
+    # Celery Worker 不可用时自动降级，不影响下单主流程
+    if _CELERY_ENABLED:
+        for order in latest_orders:
+            restaurant = Restaurant.query.get(order.restaurant_id)
+            restaurant_name = restaurant.name if restaurant else '未知餐厅'
+            try:
+                _notify_new_order.delay(
+                    order_id=order.id,
+                    order_no=order.order_no,
+                    restaurant_name=restaurant_name,
+                    total_amount=float(order.total_amount),
+                )
+            except Exception:
+                pass
 
     return created({
         'orders': [_order_dict(o) for o in latest_orders]

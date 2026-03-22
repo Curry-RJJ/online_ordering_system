@@ -63,7 +63,7 @@ services:
       # 数据库URL（会自动使用上面的配置）
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-meituan_user}:${MYSQL_PASSWORD:-meituan_pass}@mysql:3306/${MYSQL_DATABASE:-meituan_waimai}?charset=utf8mb4
       
-      # Redis配置
+      # Redis配置（缓存 + Celery Broker 共用同一 Redis 实例）
       REDIS_URL: redis://redis:6379/0
 
       TZ: Asia/Shanghai
@@ -79,6 +79,52 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  # ── Celery Worker：执行异步任务（新订单通知、状态变更通知）────────
+  celery_worker:
+    build: .
+    container_name: online_ordering_celery_worker
+    restart: always
+    # 覆盖 entrypoint，直接启动 Celery Worker
+    entrypoint: ["celery", "-A", "celery_worker.celery", "worker",
+                 "--loglevel=info", "--concurrency=2"]
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-meituan_user}:${MYSQL_PASSWORD:-meituan_pass}@mysql:3306/${MYSQL_DATABASE:-meituan_waimai}?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      TZ: Asia/Shanghai
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  # ── Celery Beat：定时任务调度器（每小时清理过期订单）──────────────
+  celery_beat:
+    build: .
+    container_name: online_ordering_celery_beat
+    restart: always
+    entrypoint: ["celery", "-A", "celery_worker.celery", "beat",
+                 "--loglevel=info", "--scheduler=celery.beat:PersistentScheduler",
+                 "--schedule=/app/logs/celerybeat-schedule"]
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-meituan_user}:${MYSQL_PASSWORD:-meituan_pass}@mysql:3306/${MYSQL_DATABASE:-meituan_waimai}?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      TZ: Asia/Shanghai
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
       redis:
         condition: service_healthy
     networks:
