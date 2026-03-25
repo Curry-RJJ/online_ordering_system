@@ -14,17 +14,10 @@ order_bp = Blueprint('order', __name__, url_prefix='/order')
 @order_bp.route('/create/<int:dish_id>', methods=['GET', 'POST'])
 @login_required
 def create_order(dish_id):
+    # 单菜品直接下单已废弃，点餐请通过购物车结算
     dish = Dish.query.get_or_404(dish_id)
-
-    if request.method == 'POST':
-        quantity = int(request.form['quantity'])
-        order = Order(user_id=current_user.id, dish_id=dish_id, quantity=quantity)
-        db.session.add(order)
-        db.session.commit()
-        flash('下单成功')
-        return redirect(url_for('order.list_orders'))
-
-    return render_template('order/create.html', dish=dish)
+    flash('请通过购物车下单', 'info')
+    return redirect(url_for('restaurant.restaurant_detail', restaurant_id=dish.restaurant_id))
 
 @order_bp.route('/')
 @login_required
@@ -44,24 +37,9 @@ def list_orders():
 @order_bp.route('/edit/<int:order_id>', methods=['GET', 'POST'])
 @login_required
 def edit_order(order_id):
-    order = Order.query.get_or_404(order_id)
-    
-    if order.user_id != current_user.id and current_user.role != 'admin':
-        flash('权限不足')
-        return redirect(url_for('order.list_orders'))
-    
-    if order.status not in ['未处理', '准备中']:
-        flash('订单已确认，无法修改')
-        return redirect(url_for('order.list_orders'))
-    
-    if request.method == 'POST':
-        quantity = int(request.form['quantity'])
-        order.quantity = quantity
-        db.session.commit()
-        flash('订单修改成功')
-        return redirect(url_for('order.list_orders'))
-    
-    return render_template('order/edit.html', order=order)
+    # 购物车模式下不支持编辑已下单订单，重定向到详情页
+    flash('订单提交后不支持修改，如需更改请取消后重新下单', 'info')
+    return redirect(url_for('order.order_detail', order_id=order_id))
 
 @order_bp.route('/delete/<int:order_id>')
 @login_required
@@ -72,7 +50,8 @@ def delete_order(order_id):
         flash('权限不足')
         return redirect(url_for('order.list_orders'))
     
-    if order.status not in ['未处理']:
+    # BUG-06 修复：使用英文状态值
+    if order.status not in ['pending']:
         flash('订单已处理，无法删除')
         return redirect(url_for('order.list_orders'))
     
@@ -134,7 +113,7 @@ def user_delete_order(order_id):
     
     return redirect(url_for('order.list_orders'))
 
-@order_bp.route('/cancel/<int:order_id>')
+@order_bp.route('/cancel/<int:order_id>', methods=['GET', 'POST'])
 @login_required
 def cancel_order(order_id):
     order = Order.query.get_or_404(order_id)
@@ -170,15 +149,29 @@ def update_status(order_id):
         flash('权限不足')
         return redirect(url_for('order.list_orders'))
     
-    new_status = request.form['status']
-    
-    # 更新确认时间
+    new_status = request.form.get('status', '')
+
+    # BUG-08 修复：加入状态机校验，防止随意跳转状态
+    valid_transitions = {
+        'pending': ['confirmed', 'cancelled'],
+        'confirmed': ['preparing', 'cancelled'],
+        'preparing': ['delivering', 'cancelled'],
+        'delivering': ['completed'],
+        'completed': [],
+        'cancelled': [],
+    }
+    allowed = valid_transitions.get(order.status, [])
+    if new_status not in allowed:
+        flash(f'不允许从「{order.status}」切换到「{new_status}」', 'warning')
+        return redirect(url_for('order.list_orders'))
+
+    # 更新时间戳
     from datetime import datetime
     if new_status == 'confirmed' and not order.confirmed_at:
         order.confirmed_at = datetime.utcnow()
     elif new_status == 'completed' and not order.delivered_at:
         order.delivered_at = datetime.utcnow()
-    
+
     order.status = new_status
     db.session.commit()
 
@@ -274,11 +267,24 @@ def merchant_manage_orders():
         'today_revenue': today_revenue
     }
     
-    return render_template('order/merchant_manage.html', 
-                         restaurant=restaurant, 
-                         orders=orders, 
+    # BUG-14 修复：补充 status_filter_name 供模板显示
+    status_name_map = {
+        'all': '全部订单',
+        'pending': '待处理',
+        'confirmed': '已确认',
+        'preparing': '准备中',
+        'delivering': '配送中',
+        'completed': '已完成',
+        'cancelled': '已取消',
+    }
+    status_filter_name = status_name_map.get(status_filter, '全部订单')
+
+    return render_template('order/merchant_manage.html',
+                         restaurant=restaurant,
+                         orders=orders,
                          stats=stats,
-                         status_filter=status_filter)
+                         status_filter=status_filter,
+                         status_filter_name=status_filter_name)
 
 @order_bp.route('/merchant/update_status/<int:order_id>', methods=['POST'])
 @login_required

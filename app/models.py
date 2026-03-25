@@ -1,7 +1,6 @@
 from app import db
 from flask_login import UserMixin
 from datetime import datetime
-from app import login_manager  # 确保这个导入在上面
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -217,7 +216,3 @@ class RestaurantChangeRequest(db.Model):
     reviewer = db.relationship('User', foreign_keys=[reviewer_id])
     restaurant = db.relationship('Restaurant', backref='change_requests')
     dish = db.relationship('Dish', backref='change_requests')
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))

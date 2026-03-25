@@ -25,7 +25,12 @@
                         <div class="stat-label">分钟送达</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">4.8</div>
+                        <div class="stat-number">
+                            {% if restaurants %}
+                                {% set avg = (restaurants | map(attribute='rating') | select | list | sum) / (restaurants | selectattr('rating') | list | length) if restaurants | selectattr('rating') | list | length > 0 else 0 %}
+                                {{ "%.1f"|format(avg) if avg > 0 else '--' }}
+                            {% else %}--{% endif %}
+                        </div>
                         <div class="stat-label">平均评分</div>
                     </div>
                 </div>
@@ -60,14 +65,13 @@
                        class="filter-btn {{ 'active' if sort_by == 'rating' else '' }}">
                         <i class="fas fa-star me-1"></i>评分
                     </a>
-                    <a href="{{ url_for('restaurant.list_restaurants', sort='sales', keyword=keyword, category=current_category) }}" 
+                    <a href="{{ url_for('restaurant.list_restaurants', sort='sales', keyword=keyword, category=current_category) }}"
                        class="filter-btn {{ 'active' if sort_by == 'sales' else '' }}">
-                        <i class="fas fa-fire me-1"></i>销量
+                        <i class="fas fa-fire me-1"></i>评价数
                     </a>
-                    <a href="{{ url_for('restaurant.list_restaurants', sort='distance', keyword=keyword, category=current_category) }}" 
-                       class="filter-btn {{ 'active' if sort_by == 'distance' else '' }}">
+                    <span class="filter-btn disabled" title="距离排序需要定位权限，暂未开放" style="opacity:0.45;cursor:not-allowed;">
                         <i class="fas fa-map-marker-alt me-1"></i>距离
-                    </a>
+                    </span>
                 </div>
                 <div class="view-toggle">
                     <button class="view-btn active" data-view="list">

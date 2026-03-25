@@ -48,6 +48,7 @@ def api_list_restaurants():
     餐厅列表（支持搜索、分类筛选、排序、分页）
     ---
     Query: keyword, category, sort(rating|sales|newest), page, per_page
+    注：sort=sales 实际按 review_count（评价数）排序，字段名保留向后兼容
     """
     keyword = request.args.get('keyword', '').strip()
     category_id = request.args.get('category', type=int)

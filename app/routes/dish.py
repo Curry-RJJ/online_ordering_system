@@ -27,23 +27,40 @@ def add_dish():
     if request.method == 'POST':
         # 基本信息
         name = request.form['name']
-        price = float(request.form['price'])
+        # BUG-12 修复：数字字段加 try/except 防止非法输入导致 500
+        try:
+            price = float(request.form['price'])
+        except (ValueError, TypeError, KeyError):
+            flash('价格格式不正确')
+            return redirect(request.referrer or url_for('dish.add_dish'))
         description = request.form.get('description', '')
         restaurant_id = request.form.get('restaurant_id', type=int)
         category_id = request.form.get('category_id', type=int) or None
         ingredients = request.form.get('ingredients', '')
-        
+
         # 商家管理员只能为自己的商家添加菜品
         if current_user.role == 'merchant':
             restaurant_id = current_user.restaurant_id
-        
+
         # 价格信息
-        original_price = float(request.form.get('original_price') or 0) or None
-        discount_rate = float(request.form.get('discount_rate') or 0) or None
-        
+        try:
+            original_price = float(request.form.get('original_price') or 0) or None
+        except (ValueError, TypeError):
+            original_price = None
+        try:
+            discount_rate = float(request.form.get('discount_rate') or 0) or None
+        except (ValueError, TypeError):
+            discount_rate = None
+
         # 其他信息
-        rating = float(request.form.get('rating', 4.5))
-        sales_count = int(request.form.get('sales_count', 0))
+        try:
+            rating = float(request.form.get('rating', 4.5))
+        except (ValueError, TypeError):
+            rating = 4.5
+        try:
+            sales_count = int(request.form.get('sales_count', 0))
+        except (ValueError, TypeError):
+            sales_count = 0
         
         # 处理菜品图片上传
         image = ''
@@ -146,17 +163,30 @@ def edit_dish(dish_id):
         # 确保图片目录存在
         create_image_directories()
         
+        # BUG-12 修复：数字字段加 try/except
+        def _safe_float(val, default=0.0):
+            try:
+                return float(val) if val else default
+            except (ValueError, TypeError):
+                return default
+
+        def _safe_int(val, default=0):
+            try:
+                return int(val) if val else default
+            except (ValueError, TypeError):
+                return default
+
         # 准备修改数据
         change_data = {
             'name': request.form['name'],
-            'price': float(request.form['price']),
+            'price': _safe_float(request.form.get('price'), 0.0),
             'description': request.form.get('description', ''),
             'category_id': request.form.get('category_id', type=int) or None,
             'ingredients': request.form.get('ingredients', ''),
-            'original_price': float(request.form.get('original_price') or 0) or None,
-            'discount_rate': float(request.form.get('discount_rate') or 0) or None,
-            'rating': float(request.form.get('rating', 4.5)),
-            'sales_count': int(request.form.get('sales_count', 0)),
+            'original_price': _safe_float(request.form.get('original_price'), 0.0) or None,
+            'discount_rate': _safe_float(request.form.get('discount_rate'), 0.0) or None,
+            'rating': _safe_float(request.form.get('rating'), 4.5),
+            'sales_count': _safe_int(request.form.get('sales_count'), 0),
             'available': request.form.get('available') == 'on',
             'is_recommended': request.form.get('is_recommended') == 'on',
             'is_spicy': request.form.get('is_spicy') == 'on'

@@ -62,6 +62,9 @@ def list_restaurants():
         keyword = request.args.get('keyword', '')
         category_id = request.args.get('category', type=int)
         sort_by = request.args.get('sort', 'rating')
+        # BUG-13 修复：distance 排序需要用户位置，当前未接入地图 API，回退到评分排序
+        if sort_by == 'distance':
+            sort_by = 'rating'
 
         version = _get_list_version()
         cache_key = f'restaurant_list_v{version}:{keyword}:{category_id}:{sort_by}'
@@ -255,6 +258,25 @@ def add_restaurant():
             else:
                 flash('横幅上传失败，请检查文件格式', 'warning')
         
+        # BUG-12 修复：对数字字段加 try/except，防止非法输入导致 500
+        try:
+            delivery_fee = float(request.form.get('delivery_fee', 0))
+        except (ValueError, TypeError):
+            delivery_fee = 0.0
+        try:
+            min_order = float(request.form.get('min_order', 0))
+        except (ValueError, TypeError):
+            min_order = 0.0
+        try:
+            rating = float(request.form.get('rating', 4.5))
+            rating = max(0.0, min(5.0, rating))
+        except (ValueError, TypeError):
+            rating = 4.5
+        try:
+            review_count = int(request.form.get('review_count', 0))
+        except (ValueError, TypeError):
+            review_count = 0
+
         # 创建餐厅对象
         restaurant = Restaurant(
             name=request.form['name'],
@@ -262,11 +284,11 @@ def add_restaurant():
             address=request.form.get('address', ''),
             phone=request.form.get('phone', ''),
             business_hours=request.form.get('business_hours', ''),
-            delivery_fee=float(request.form.get('delivery_fee', 0)),
-            min_order=float(request.form.get('min_order', 0)),
+            delivery_fee=delivery_fee,
+            min_order=min_order,
             cuisine_type=request.form.get('cuisine_type', ''),
-            rating=float(request.form.get('rating', 4.5)),
-            review_count=int(request.form.get('review_count', 0)),
+            rating=rating,
+            review_count=review_count,
             status='open' if request.form.get('is_open') == 'on' else 'closed',
             logo=logo_path,
             banner=banner_path
@@ -301,6 +323,16 @@ def edit_restaurant(restaurant_id):
         # 确保图片目录存在
         create_image_directories()
         
+        # BUG-12 修复：对 delivery_fee / min_order 加 try/except
+        try:
+            _delivery_fee = float(request.form.get('delivery_fee', 0))
+        except (ValueError, TypeError):
+            _delivery_fee = 0.0
+        try:
+            _min_order = float(request.form.get('min_order', 0))
+        except (ValueError, TypeError):
+            _min_order = 0.0
+
         # 准备修改数据
         change_data = {
             'name': request.form['name'],
@@ -308,8 +340,8 @@ def edit_restaurant(restaurant_id):
             'address': request.form.get('address', ''),
             'phone': request.form.get('phone', ''),
             'business_hours': request.form.get('business_hours', ''),
-            'delivery_fee': float(request.form.get('delivery_fee', 0)),
-            'min_order': float(request.form.get('min_order', 0)),
+            'delivery_fee': _delivery_fee,
+            'min_order': _min_order,
         }
         
         # 处理图片上传（商家管理员也需要上传图片）
@@ -339,7 +371,10 @@ def edit_restaurant(restaurant_id):
             restaurant.delivery_fee = change_data['delivery_fee']
             restaurant.min_order = change_data['min_order']
             restaurant.status = request.form.get('status', 'open')
-            restaurant.rating = float(request.form.get('rating', 4.5))
+            try:
+                restaurant.rating = float(request.form.get('rating', 4.5))
+            except (ValueError, TypeError):
+                pass  # 保留原值
             
             # 应用图片修改
             if 'logo' in change_data:
@@ -415,13 +450,14 @@ def toggle_status(restaurant_id):
     data = request.get_json()
     new_status = data.get('status')
     
-    if new_status in ['open', 'closed']:
+    # BUG-16 修复：支持 busy（忙碌）状态
+    if new_status in ['open', 'closed', 'busy']:
         restaurant.status = new_status
         db.session.commit()
         _invalidate_restaurant_cache(restaurant_id)
         return jsonify({'success': True, 'message': '状态更新成功'})
-    
-    return jsonify({'success': False, 'message': '无效的状态'})
+
+    return jsonify({'success': False, 'message': '无效的状态，允许值：open / closed / busy'})
 
 @restaurant_bp.route('/<int:restaurant_id>/delete')
 @login_required
@@ -631,11 +667,12 @@ def merchant_toggle_status(restaurant_id):
     data = request.get_json()
     new_status = data.get('status')
     
-    if new_status not in ['open', 'closed']:
-        return jsonify({'success': False, 'message': '无效的状态'})
-    
+    # BUG-16 修复：商家也可以设置 busy（忙碌）状态
+    if new_status not in ['open', 'closed', 'busy']:
+        return jsonify({'success': False, 'message': '无效的状态，允许值：open / closed / busy'})
+
     restaurant.status = new_status
     db.session.commit()
     _invalidate_restaurant_cache(restaurant_id)
-    status_text = '营业中' if new_status == 'open' else '已打烊'
+    status_text = {'open': '营业中', 'closed': '已打烊', 'busy': '忙碌中'}.get(new_status, new_status)
     return jsonify({'success': True, 'message': f'商家状态已更新为：{status_text}'}) 

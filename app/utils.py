@@ -73,76 +73,58 @@ def save_uploaded_image(file, upload_type='dishes', max_size=(800, 600)):
     Returns:
         str: 保存的文件相对路径，失败返回None
     """
+    # BUG-17 修复：用 logger 替换所有 print 语句
+    from flask import current_app
+    logger = current_app.logger
+
     if not file or not file.filename:
-        print("没有文件或文件名为空")
+        logger.debug("save_uploaded_image: 没有文件或文件名为空")
         return None
-    
+
     if not allowed_file(file.filename):
-        print(f"不支持的文件格式: {file.filename}")
+        logger.warning(f"save_uploaded_image: 不支持的文件格式: {file.filename}")
         return None
-    
+
     try:
-        # 生成唯一文件名
         filename = generate_unique_filename(file.filename)
-        print(f"生成文件名: {filename}")
-        
-        # 获取应用根目录下的static目录
-        from flask import current_app
+        logger.debug(f"save_uploaded_image: 生成文件名: {filename}")
+
         app_root = os.path.dirname(current_app.instance_path)
         upload_dir = os.path.join(app_root, 'app', 'static', 'images', upload_type)
-        
-        # 确保目录存在
+
         os.makedirs(upload_dir, exist_ok=True)
-        print(f"保存目录: {upload_dir}")
-        
-        # 完整文件路径
+        logger.debug(f"save_uploaded_image: 保存目录: {upload_dir}")
+
         file_path = os.path.join(upload_dir, filename)
-        print(f"完整文件路径: {file_path}")
-        
-        # 保存原始文件
         file.save(file_path)
-        print("文件保存成功")
-        
-        # 使用PIL压缩和调整图片大小
+        logger.debug(f"save_uploaded_image: 文件保存成功: {file_path}")
+
         try:
             with Image.open(file_path) as img:
-                print(f"原始图片信息: {img.size}, {img.mode}")
-                
-                # 转换为RGB模式（处理RGBA等格式）
                 if img.mode in ('RGBA', 'LA', 'P'):
                     background = Image.new('RGB', img.size, (255, 255, 255))
                     if img.mode == 'P':
                         img = img.convert('RGBA')
                     background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
                     img = background
-                    print("图片模式转换完成")
-                
-                # 调整图片大小（保持比例）
+
                 img.thumbnail(max_size, Image.Resampling.LANCZOS)
-                print(f"图片尺寸调整后: {img.size}")
-                
-                # 保存压缩后的图片
                 img.save(file_path, 'JPEG', quality=85, optimize=True)
-                print("图片压缩保存完成")
+                logger.debug(f"save_uploaded_image: 图片压缩完成，尺寸: {img.size}")
         except Exception as img_error:
-            print(f"图片处理失败: {img_error}")
-            # 如果图片处理失败，但文件已保存，仍然返回路径
-        
-        # 返回相对路径（用于数据库存储和Web访问）
+            logger.warning(f"save_uploaded_image: 图片处理失败: {img_error}")
+
         web_path = f"/static/images/{upload_type}/{filename}"
-        print(f"返回的Web路径: {web_path}")
+        logger.info(f"save_uploaded_image: 返回路径: {web_path}")
         return web_path
-        
+
     except Exception as e:
-        print(f"图片保存失败: {e}")
-        import traceback
-        traceback.print_exc()
-        # 如果保存失败，删除可能创建的文件
+        logger.error(f"save_uploaded_image: 图片保存失败: {e}", exc_info=True)
         if 'file_path' in locals() and os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print("清理失败文件")
-            except:
+                logger.debug("save_uploaded_image: 已清理失败文件")
+            except Exception:
                 pass
         return None
 
@@ -161,13 +143,19 @@ def delete_image_file(image_path):
         app_root = os.path.dirname(current_app.instance_path)
         file_path = os.path.join(app_root, 'app', image_path)
         
+        from flask import current_app as _app
         if os.path.exists(file_path):
             os.remove(file_path)
-            print(f"删除文件成功: {file_path}")
+            _app.logger.info(f"delete_image_file: 删除文件成功: {file_path}")
         else:
-            print(f"文件不存在: {file_path}")
+            _app.logger.debug(f"delete_image_file: 文件不存在: {file_path}")
     except Exception as e:
-        print(f"删除图片文件失败: {e}")
+        try:
+            from flask import current_app as _app2
+            _app2.logger.error(f"delete_image_file: 删除图片文件失败: {e}")
+        except Exception:
+            pass  # 无 app 上下文时静默失败
+
 
 def create_image_directories():
     """创建必要的图片目录"""
@@ -184,18 +172,14 @@ def create_image_directories():
         
         for directory in directories:
             os.makedirs(directory, exist_ok=True)
-            print(f"创建目录: {directory}")
-            
+
     except Exception as e:
-        print(f"创建图片目录失败: {e}")
-        # 备用方案：使用相对路径
+        # 备用方案：使用相对路径，BUG-17 修复：移除 print
         directories = [
             'app/static/images/dishes',
             'app/static/images/restaurants',
-            'app/static/images/logos', 
+            'app/static/images/logos',
             'app/static/images/banners'
         ]
-        
         for directory in directories:
-            os.makedirs(directory, exist_ok=True)
-            print(f"使用相对路径创建目录: {directory}") 
+            os.makedirs(directory, exist_ok=True) 

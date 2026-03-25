@@ -173,11 +173,12 @@
                             {% else %}
                                 <!-- 普通用户操作 -->
                                 {% if order.status == 'pending' %}
-                                    <a href="{{ url_for('order.cancel_order', order_id=order.id) }}" 
-                                       class="btn btn-outline-danger btn-sm"
-                                       onclick="return confirm('确认取消订单？')">
-                                        <i class="fas fa-times me-1"></i>取消订单
-                                    </a>
+                                    <form method="POST" action="{{ url_for('order.cancel_order', order_id=order.id) }}"
+                                          onsubmit="return confirm('确认取消订单？')" style="display:inline;">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-times me-1"></i>取消订单
+                                        </button>
+                                    </form>
                                 {% elif order.status == 'completed' %}
                                     <a href="{{ url_for('restaurant.restaurant_detail', restaurant_id=order.restaurant_id) }}" 
                                        class="btn btn-warning btn-sm">

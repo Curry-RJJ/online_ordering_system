@@ -10,12 +10,29 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        email = request.form.get('email', '').strip() or None
+        phone = request.form.get('phone', '').strip() or None
+
+        # BUG-07 修复：校验确认密码
+        if not username or not password:
+            flash('用户名和密码不能为空')
+            return redirect(url_for('auth.register'))
+
+        if password != confirm_password:
+            flash('两次输入的密码不一致')
+            return redirect(url_for('auth.register'))
+
+        # BUG-07 修复：邮箱唯一性校验
+        if email and User.query.filter_by(email=email).first():
+            flash('该邮箱已被注册')
+            return redirect(url_for('auth.register'))
 
         try:
             hashed_pw = generate_password_hash(password)
-            new_user = User(username=username, password=hashed_pw)
+            new_user = User(username=username, password=hashed_pw, email=email, phone=phone)
             db.session.add(new_user)
             db.session.commit()
             flash('注册成功，请登录')
@@ -37,11 +54,12 @@ def login():
         if user and check_password_hash(user.password, password):
             login_user(user)
             flash('登录成功')
-            # 获取登录前想要访问的页面
-            next_page = request.args.get('next')
-            if next_page:
+            # BUG-11 修复：只允许跳转到站内相对路径，防止开放重定向
+            next_page = request.args.get('next', '')
+            from urllib.parse import urlparse
+            parsed = urlparse(next_page)
+            if next_page and not parsed.netloc and not parsed.scheme and next_page.startswith('/'):
                 return redirect(next_page)
-            # 默认跳转到餐厅列表（主页）
             return redirect(url_for('restaurant.list_restaurants'))
         else:
             flash('用户名或密码错误')
@@ -507,11 +525,11 @@ def approve_merchant_application(app_id):
     user.restaurant_id = application.restaurant_id
     
     if application.application_type == 'new':
-        # 新商家申请通过，但保持下线状态
+        # BUG-15 修复：审批通过后将餐厅设为上线状态，让商家可以正常营业
         restaurant = Restaurant.query.get(application.restaurant_id)
         if restaurant:
-            restaurant.is_active = False  # 保持下线
-            restaurant.status = 'closed'
+            restaurant.is_active = True
+            restaurant.status = 'open'
     
     db.session.commit()
     

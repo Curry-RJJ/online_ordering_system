@@ -3,13 +3,14 @@ pytest 全局配置
 - 通过环境变量在 create_app() 之前注入 SQLite 路径，彻底避免引擎缓存问题
 - fakeredis 模拟 Redis，无需真实 Redis 连接
 """
+import uuid
 import pytest
 import fakeredis
 from werkzeug.security import generate_password_hash
 from flask_jwt_extended import create_access_token
 
 from app import create_app, db
-from app.models import User, Restaurant, Dish, Category, Address
+from app.models import User, Restaurant, Dish, Category, Address, Order
 
 
 # ──────────────────────────────────────────────
@@ -87,6 +88,14 @@ def _seed():
     db.session.add(restaurant)
     db.session.flush()
 
+    # 商家用户绑定到测试餐厅
+    merchant = User(username='merchant',
+                    password=generate_password_hash('Merchant123'),
+                    role='merchant', phone='13922229000',
+                    restaurant_id=restaurant.id)
+    db.session.add(merchant)
+    db.session.flush()
+
     category = Category(name='热菜', sort_order=1)
     db.session.add(category)
     db.session.flush()
@@ -127,6 +136,66 @@ def other_token(app):
     with app.app_context():
         user = User.query.filter_by(username='otheruser').first()
         return create_access_token(identity=str(user.id))
+
+
+@pytest.fixture
+def merchant_token(app):
+    with app.app_context():
+        user = User.query.filter_by(username='merchant').first()
+        return create_access_token(identity=str(user.id))
+
+
+# ──────────────────────────────────────────────
+# Web（Session）客户端 Fixtures（用于 Jinja 路由测试）
+# ──────────────────────────────────────────────
+
+@pytest.fixture
+def web_client(client):
+    """已用 testuser 登录的 Web 测试客户端"""
+    client.post('/auth/login', data={'username': 'testuser', 'password': 'Test123456'})
+    return client
+
+
+@pytest.fixture
+def admin_web_client(client):
+    """已用 admin 登录的 Web 测试客户端"""
+    client.post('/auth/login', data={'username': 'admin', 'password': 'admin123'})
+    return client
+
+
+@pytest.fixture
+def merchant_web_client(client):
+    """已用 merchant 登录的 Web 测试客户端"""
+    client.post('/auth/login', data={'username': 'merchant', 'password': 'Merchant123'})
+    return client
+
+
+# ──────────────────────────────────────────────
+# 订单数据 Fixture
+# ──────────────────────────────────────────────
+
+@pytest.fixture
+def order_in_db(app):
+    """在数据库中创建一条 pending 测试订单，返回 order.id"""
+    with app.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        restaurant = Restaurant.query.first()
+        order = Order(
+            order_no=f'TEST{uuid.uuid4().hex[:8].upper()}',
+            user_id=user.id,
+            restaurant_id=restaurant.id,
+            delivery_name='测试收件人',
+            delivery_phone='13900139000',
+            delivery_address='北京市测试路1号',
+            subtotal=25.5,
+            delivery_fee=5.0,
+            total_amount=30.5,
+            status='pending',
+            payment_status='unpaid',
+        )
+        db.session.add(order)
+        db.session.commit()
+        return order.id
 
 
 # ──────────────────────────────────────────────

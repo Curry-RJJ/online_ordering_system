@@ -61,7 +61,7 @@
                         <td>
                             <strong>{{ restaurant.name }}</strong>
                             <br>
-                            <small class="text-muted">{{ restaurant.description[:30] }}...</small>
+                            <small class="text-muted">{{ (restaurant.description or '')[:30] }}...</small>
                         </td>
                         <td>{{ restaurant.address }}</td>
                         <td>{{ restaurant.business_hours }}</td>
