@@ -1,5 +1,6 @@
 from flask import Flask, render_template_string, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
 from flask_caching import Cache
 from flask_jwt_extended import JWTManager
@@ -10,6 +11,7 @@ from datetime import timedelta
 import os
 
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 cache = Cache()
 jwt = JWTManager()
@@ -88,6 +90,7 @@ def create_app(config_name='default'):
     app.config['RATELIMIT_STRATEGY'] = 'fixed-window'
 
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     cache.init_app(app)

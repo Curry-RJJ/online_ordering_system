@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
-from app.models import User, AdminApplication, MerchantApplication, Address, Restaurant
+from app.models import User, AdminApplication, MerchantApplication, Address, Restaurant, Order, Review
 from app import db, limiter
 from sqlalchemy.exc import IntegrityError
 
@@ -145,7 +145,11 @@ def delete_user(user_id):
     if user.id == current_user.id:
         flash('不能删除自己的账户')
         return redirect(url_for('auth.admin_users'))
-    
+
+    # 保留历史订单和评价，仅将 user_id 置 null
+    Order.query.filter_by(user_id=user_id).update({'user_id': None})
+    Review.query.filter_by(user_id=user_id).update({'user_id': None})
+
     db.session.delete(user)
     db.session.commit()
     flash('用户已删除')

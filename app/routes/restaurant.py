@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
-from app.models import Restaurant, Dish, Category, Review, CartItem, RestaurantChangeRequest
+from app.models import Restaurant, Dish, Category, Review, CartItem, RestaurantChangeRequest, OrderItem
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
 from app import db, cache
 from sqlalchemy import func, or_
@@ -604,6 +604,8 @@ def approve_change_request(request_id):
         elif change_request.request_type == 'dish_delete':
             dish = Dish.query.get(change_request.dish_id)
             if dish:
+                # 保留历史订单项，仅将 dish_id 置 null
+                OrderItem.query.filter_by(dish_id=dish.id).update({'dish_id': None})
                 db.session.delete(dish)
         
         # 更新请求状态

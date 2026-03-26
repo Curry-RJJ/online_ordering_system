@@ -14,13 +14,13 @@ class User(db.Model, UserMixin):
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'))  # 商家管理员所管理的商家ID
     
     # 用户地址
-    addresses = db.relationship('Address', backref='user', lazy='dynamic')
-    # 用户订单
+    addresses = db.relationship('Address', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    # 用户订单（保留订单记录，user_id 置 null）
     orders = db.relationship('Order', backref='user', lazy='dynamic')
-    # 用户评价
+    # 用户评价（保留评价记录，user_id 置 null）
     reviews = db.relationship('Review', backref='user', lazy='dynamic')
     # 购物车
-    cart_items = db.relationship('CartItem', backref='user', lazy='dynamic')
+    cart_items = db.relationship('CartItem', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
 class Address(db.Model):
     """用户地址"""
@@ -52,12 +52,12 @@ class Restaurant(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # 餐厅菜品
-    dishes = db.relationship('Dish', backref='restaurant', lazy='dynamic')
+    dishes = db.relationship('Dish', backref='restaurant', lazy='dynamic', cascade='all, delete-orphan')
     # 餐厅订单
-    orders = db.relationship('Order', backref='restaurant', lazy='dynamic')
+    orders = db.relationship('Order', backref='restaurant', lazy='dynamic', cascade='all, delete-orphan')
     # 餐厅评价
-    reviews = db.relationship('Review', backref='restaurant', lazy='dynamic')
-    # 商家管理员
+    reviews = db.relationship('Review', backref='restaurant', lazy='dynamic', cascade='all, delete-orphan')
+    # 商家管理员（User.restaurant_id 为 nullable，删餐厅后自动置 null）
     managers = db.relationship('User', backref='managed_restaurant', lazy='dynamic')
 
 class RestaurantCategory(db.Model):
@@ -98,10 +98,10 @@ class Dish(db.Model):
     available = db.Column(db.Boolean, default=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # 菜品订单项
+    # 菜品订单项（保留历史订单，dish_id 置 null）
     order_items = db.relationship('OrderItem', backref='dish', lazy='dynamic')
     # 购物车项
-    cart_items = db.relationship('CartItem', backref='dish', lazy='dynamic')
+    cart_items = db.relationship('CartItem', backref='dish', lazy='dynamic', cascade='all, delete-orphan')
 
 class CartItem(db.Model):
     """购物车项"""
@@ -116,7 +116,7 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_no = db.Column(db.String(32), unique=True, nullable=False)  # 订单号（unique 自带索引）
     # 索引：订单列表按用户/餐厅/状态三个维度查询，是最高频的后台操作
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False, index=True)
     
     # 收货信息
@@ -149,7 +149,7 @@ class OrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # 索引：查看订单详情时按 order_id 取所有订单项，级联删除时也走此索引
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False, index=True)
-    dish_id = db.Column(db.Integer, db.ForeignKey('dish.id'), nullable=False, index=True)
+    dish_id = db.Column(db.Integer, db.ForeignKey('dish.id'), index=True)
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)  # 下单时的价格
     subtotal = db.Column(db.Float, nullable=False)  # 小计
@@ -158,7 +158,7 @@ class Review(db.Model):
     """评价"""
     id = db.Column(db.Integer, primary_key=True)
     # 索引：餐厅详情页按 restaurant_id 取评价列表
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurant.id'), nullable=False, index=True)
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
     
@@ -177,7 +177,7 @@ class AdminApplication(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending/approved/rejected
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref='admin_applications')
+    user = db.relationship('User', backref=db.backref('admin_applications', cascade='all, delete-orphan'))
 
 class MerchantApplication(db.Model):
     """商家管理员申请商家"""
@@ -194,8 +194,8 @@ class MerchantApplication(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending/approved/rejected
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
-    user = db.relationship('User', backref='merchant_applications', foreign_keys=[user_id])
-    restaurant = db.relationship('Restaurant', backref='applications', foreign_keys=[restaurant_id])
+    user = db.relationship('User', backref=db.backref('merchant_applications', cascade='all, delete-orphan'), foreign_keys=[user_id])
+    restaurant = db.relationship('Restaurant', backref=db.backref('applications', cascade='all, delete'), foreign_keys=[restaurant_id])
 
 class RestaurantChangeRequest(db.Model):
     """商家和菜品修改审核请求"""
@@ -212,7 +212,7 @@ class RestaurantChangeRequest(db.Model):
     reviewed_at = db.Column(db.DateTime)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     
-    merchant = db.relationship('User', backref='change_requests', foreign_keys=[merchant_id])
+    merchant = db.relationship('User', backref=db.backref('change_requests', cascade='all, delete-orphan'), foreign_keys=[merchant_id])
     reviewer = db.relationship('User', foreign_keys=[reviewer_id])
-    restaurant = db.relationship('Restaurant', backref='change_requests')
+    restaurant = db.relationship('Restaurant', backref=db.backref('change_requests', cascade='all, delete'), foreign_keys=[restaurant_id])
     dish = db.relationship('Dish', backref='change_requests')

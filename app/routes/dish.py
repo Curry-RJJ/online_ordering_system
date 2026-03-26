@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.models import Dish, Restaurant, Category, RestaurantChangeRequest
+from app.models import Dish, Restaurant, Category, RestaurantChangeRequest, OrderItem
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
 from app import db
 import json
@@ -363,17 +363,12 @@ def force_delete_dish(dish_id):
     dish = Dish.query.get_or_404(dish_id)
     
     try:
-        # 先删除相关的购物车项
-        from app.models import CartItem
-        CartItem.query.filter_by(dish_id=dish_id).delete()
-        
-        # 注意：不删除订单项，因为这会影响历史订单数据
-        # 如果真的需要删除，可以先检查订单状态，只删除未完成的订单中的项目
-        
-        # 删除菜品
+        # 保留历史订单项，仅将 dish_id 置 null
+        OrderItem.query.filter_by(dish_id=dish_id).update({'dish_id': None})
+        # 删除菜品（购物车项通过 cascade 自动删除）
         db.session.delete(dish)
         db.session.commit()
-        flash('菜品及相关购物车数据已强制删除', 'success')
+        flash('菜品已强制删除，历史订单记录已保留', 'success')
     except Exception as e:
         db.session.rollback()
         flash('强制删除失败，请联系系统管理员', 'danger')
