@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.models import Order, Dish, Restaurant, OrderItem
+from app.models import Order, Dish, Restaurant, OrderItem, Review
 from app import db
 from datetime import datetime
 try:
@@ -210,7 +210,10 @@ def order_detail(order_id):
         flash('权限不足')
         return redirect(url_for('order.list_orders'))
     
-    return render_template('order/detail.html', order=order)
+    has_review = Review.query.filter_by(
+        order_id=order_id, user_id=current_user.id
+    ).first() is not None
+    return render_template('order/detail.html', order=order, has_review=has_review)
 
 @order_bp.route('/merchant/manage')
 @login_required
@@ -361,5 +364,69 @@ def merchant_delete_order(order_id):
     except Exception as e:
         db.session.rollback()
         flash(f'删除失败: {str(e)}', 'danger')
-    
+
     return redirect(url_for('order.merchant_manage_orders'))
+
+
+# ── 评价功能 ─────────────────────────────────────────────────────────────────
+
+@order_bp.route('/<int:order_id>/review', methods=['GET', 'POST'])
+@login_required
+def submit_review(order_id):
+    """提交订单评价"""
+    order = Order.query.get_or_404(order_id)
+
+    if order.user_id != current_user.id:
+        flash('权限不足', 'danger')
+        return redirect(url_for('order.list_orders'))
+
+    if order.status != 'completed':
+        flash('只有已完成的订单才能评价', 'warning')
+        return redirect(url_for('order.order_detail', order_id=order_id))
+
+    existing = Review.query.filter_by(order_id=order_id, user_id=current_user.id).first()
+    if existing:
+        flash('您已评价过此订单', 'info')
+        return redirect(url_for('order.order_detail', order_id=order_id))
+
+    if request.method == 'POST':
+        try:
+            rating = int(request.form.get('rating', 0))
+        except (ValueError, TypeError):
+            rating = 0
+
+        if rating not in range(1, 6):
+            flash('请选择 1-5 星评分', 'warning')
+            return render_template('order/review.html', order=order)
+
+        content = request.form.get('content', '').strip()
+
+        review = Review(
+            user_id=current_user.id,
+            restaurant_id=order.restaurant_id,
+            order_id=order_id,
+            rating=rating,
+            content=content or None,
+        )
+        db.session.add(review)
+
+        # 加权平均更新餐厅评分
+        restaurant = Restaurant.query.get(order.restaurant_id)
+        if restaurant:
+            old_count = restaurant.review_count or 0
+            old_rating = restaurant.rating or 0.0
+            new_count = old_count + 1
+            new_rating = round((old_rating * old_count + rating) / new_count, 1)
+            restaurant.review_count = new_count
+            restaurant.rating = new_rating
+
+        db.session.commit()
+
+        # 清除列表缓存，评分立即刷新
+        from app import cache as _cache
+        _cache.clear()
+
+        flash('评价提交成功，感谢您的反馈！', 'success')
+        return redirect(url_for('order.order_detail', order_id=order_id))
+
+    return render_template('order/review.html', order=order)

@@ -141,6 +141,30 @@ def create_app(config_name='default'):
         else:
             return redirect(url_for('auth.login'))
 
+    @app.route('/health')
+    def health_check():
+        """健康检查接口：供 Nginx upstream 检测和运维监控脚本调用"""
+        import time
+        status = {'status': 'ok', 'timestamp': int(time.time())}
+        try:
+            # 检查数据库连通性
+            db.session.execute(db.text('SELECT 1'))
+            status['db'] = 'ok'
+        except Exception as e:
+            status['db'] = 'error'
+            status['status'] = 'degraded'
+            app.logger.error(f'Health check DB error: {e}')
+        try:
+            # 检查 Redis 连通性（通过 cache ping）
+            cache.get('__health__')
+            status['cache'] = 'ok'
+        except Exception as e:
+            status['cache'] = 'error'
+            status['status'] = 'degraded'
+            app.logger.error(f'Health check Cache error: {e}')
+        http_code = 200 if status['status'] == 'ok' else 503
+        return jsonify(status), http_code
+
     from app.models import User
     @login_manager.user_loader
     def load_user(user_id):

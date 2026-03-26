@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}评价订单 #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width:640px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('order.list_orders') }}">我的订单</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('order.order_detail', order_id=order.id) }}">订单 #{{ order.id }}</a></li>
+            <li class="breadcrumb-item active">写评价</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-star text-warning me-2"></i>评价
+                <span class="text-muted fw-normal fs-6">{{ order.restaurant.name if order.restaurant else '' }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- 订单摘要 -->
+            <div class="bg-light rounded p-3 mb-4 small text-muted">
+                <strong>订单号：</strong>{{ order.order_no }}&emsp;
+                <strong>下单时间：</strong>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}&emsp;
+                <strong>金额：</strong>￥{{ order.total_amount }}
+            </div>
+
+            <form method="POST" action="{{ url_for('order.submit_review', order_id=order.id) }}">
+                <!-- 星级评分 -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">综合评分 <span class="text-danger">*</span></label>
+                    <div class="star-rating d-flex gap-2 align-items-center" id="star-container">
+                        {% for i in range(1, 6) %}
+                        <label class="star-label" for="star{{ i }}" style="cursor:pointer;font-size:2rem;color:#ddd;transition:color .15s;">
+                            <input type="radio" name="rating" id="star{{ i }}" value="{{ i }}"
+                                   style="display:none;" required>
+                            ★
+                        </label>
+                        {% endfor %}
+                        <span class="ms-2 text-muted small" id="rating-text">请点击星星评分</span>
+                    </div>
+                </div>
+
+                <!-- 文字评价 -->
+                <div class="mb-4">
+                    <label for="content" class="form-label fw-bold">评价内容 <span class="text-muted fw-normal">(选填)</span></label>
+                    <textarea class="form-control" id="content" name="content" rows="4"
+                              placeholder="分享您的用餐体验，帮助更多用户做出选择…" maxlength="500"></textarea>
+                    <div class="form-text text-end"><span id="char-count">0</span>/500</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-warning px-4">
+                        <i class="fas fa-paper-plane me-1"></i>提交评价
+                    </button>
+                    <a href="{{ url_for('order.order_detail', order_id=order.id) }}"
+                       class="btn btn-outline-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const labels = document.querySelectorAll('.star-label');
+    const text = document.getElementById('rating-text');
+    const desc = ['', '很差', '较差', '一般', '不错', '非常好'];
+
+    labels.forEach((label, idx) => {
+        const val = idx + 1;
+        label.addEventListener('mouseenter', () => highlight(val));
+        label.addEventListener('mouseleave', () => {
+            const checked = document.querySelector('input[name="rating"]:checked');
+            highlight(checked ? parseInt(checked.value) : 0);
+        });
+        label.addEventListener('click', () => {
+            highlight(val);
+            text.textContent = desc[val];
+        });
+    });
+
+    function highlight(val) {
+        labels.forEach((l, i) => {
+            l.style.color = i < val ? '#f5a623' : '#ddd';
+        });
+    }
+
+    // 字数统计
+    const textarea = document.getElementById('content');
+    const counter = document.getElementById('char-count');
+    textarea.addEventListener('input', () => counter.textContent = textarea.value.length);
+})();
+</script>
+{% endblock %}

@@ -98,15 +98,24 @@ def list_restaurants():
             restaurants_raw = query.distinct().all()
             categories_raw = Category.query.order_by(Category.sort_order).all()
 
+            # 计算全站平均评分（只统计有真实评价的餐厅）
+            rated = [r for r in restaurants_raw if r.review_count and r.review_count > 0]
+            if rated:
+                avg_rating = round(sum(r.rating for r in rated) / len(rated), 1)
+            else:
+                avg_rating = None  # 无评价时显示"暂无评分"
+
             cached = {
                 'restaurants': [_to_restaurant_dict(r) for r in restaurants_raw],
                 'categories': [_to_category_dict(c) for c in categories_raw],
+                'avg_rating': avg_rating,
             }
             cache.set(cache_key, cached, timeout=300)
 
         return render_template('restaurant/list.html',
                                restaurants=cached['restaurants'],
                                categories=cached['categories'],
+                               avg_rating=cached.get('avg_rating'),
                                keyword=keyword,
                                current_category=category_id,
                                sort_by=sort_by)

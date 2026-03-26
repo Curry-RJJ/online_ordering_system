@@ -180,9 +180,13 @@
                                         </button>
                                     </form>
                                 {% elif order.status == 'completed' %}
-                                    <a href="{{ url_for('restaurant.restaurant_detail', restaurant_id=order.restaurant_id) }}" 
-                                       class="btn btn-warning btn-sm">
+                                    <a href="{{ url_for('restaurant.restaurant_detail', restaurant_id=order.restaurant_id) }}"
+                                       class="btn btn-outline-warning btn-sm">
                                         <i class="fas fa-redo me-1"></i>再来一单
+                                    </a>
+                                    <a href="{{ url_for('order.submit_review', order_id=order.id) }}"
+                                       class="btn btn-warning btn-sm">
+                                        <i class="fas fa-star me-1"></i>写评价
                                     </a>
                                     <form method="post" action="{{ url_for('order.user_delete_order', order_id=order.id) }}"
                                           onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">

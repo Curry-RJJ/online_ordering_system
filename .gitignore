@@ -47,9 +47,10 @@ logs/
 *~
 .DS_Store
 
-# 环境变量文件
+# 环境变量文件（.env.example 为模板，允许提交；真实 .env 绝不提交）
 .env
 .env.local
+.env.production
 
 # 上传的文件（可根据需要调整）
 app/static/uploads/

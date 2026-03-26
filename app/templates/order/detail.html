@@ -144,7 +144,20 @@
                             onclick="return confirm('确认取消此订单？')">取消订单</button>
                 </form>
             {% endif %}
-            
+
+            {% if order.status == 'completed' %}
+                {% if has_review %}
+                    <span class="btn btn-outline-secondary disabled">
+                        <i class="fas fa-check me-1"></i>已评价
+                    </span>
+                {% else %}
+                    <a href="{{ url_for('order.submit_review', order_id=order.id) }}"
+                       class="btn btn-warning">
+                        <i class="fas fa-star me-1"></i>写评价
+                    </a>
+                {% endif %}
+            {% endif %}
+
             {% if order.status == 'cancelled' %}
                 <form method="POST" action="{{ url_for('order.user_delete_order', order_id=order.id) }}" class="d-inline">
                     <button type="submit" class="btn btn-outline-danger"

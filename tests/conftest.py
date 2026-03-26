@@ -10,7 +10,7 @@ from werkzeug.security import generate_password_hash
 from flask_jwt_extended import create_access_token
 
 from app import create_app, db
-from app.models import User, Restaurant, Dish, Category, Address, Order
+from app.models import User, Restaurant, Dish, Category, Address, Order, Review
 
 
 # ──────────────────────────────────────────────
@@ -192,6 +192,30 @@ def order_in_db(app):
             total_amount=30.5,
             status='pending',
             payment_status='unpaid',
+        )
+        db.session.add(order)
+        db.session.commit()
+        return order.id
+
+
+@pytest.fixture
+def completed_order_in_db(app):
+    """在数据库中创建一条 completed 测试订单，返回 order.id"""
+    with app.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        restaurant = Restaurant.query.first()
+        order = Order(
+            order_no=f'DONE{uuid.uuid4().hex[:8].upper()}',
+            user_id=user.id,
+            restaurant_id=restaurant.id,
+            delivery_name='测试收件人',
+            delivery_phone='13900139000',
+            delivery_address='北京市测试路1号',
+            subtotal=25.5,
+            delivery_fee=5.0,
+            total_amount=30.5,
+            status='completed',
+            payment_status='paid',
         )
         db.session.add(order)
         db.session.commit()

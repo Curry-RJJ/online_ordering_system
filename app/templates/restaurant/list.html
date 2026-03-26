@@ -26,12 +26,9 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-number">
-                            {% if restaurants %}
-                                {% set avg = (restaurants | map(attribute='rating') | select | list | sum) / (restaurants | selectattr('rating') | list | length) if restaurants | selectattr('rating') | list | length > 0 else 0 %}
-                                {{ "%.1f"|format(avg) if avg > 0 else '--' }}
-                            {% else %}--{% endif %}
+                            {{ avg_rating if avg_rating else '暂无' }}
                         </div>
-                        <div class="stat-label">平均评分</div>
+                        <div class="stat-label">{{ '平均评分' if avg_rating else '暂无评分' }}</div>
                     </div>
                 </div>
             </div>
