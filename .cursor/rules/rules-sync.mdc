@@ -1,0 +1,23 @@
+---
+description: Keep project-context.mdc in sync with code changes
+alwaysApply: true
+---
+
+# Rules Sync
+
+After each code change, check if `project-context.mdc` is outdated. **Update it immediately** without waiting for user prompts.
+
+## What triggers an update
+
+| Change | Section to update |
+|--------|------------------|
+| Add/remove/rename files or dirs | Directory Structure |
+| Add/modify/remove model fields or relations | Models table |
+| Add blueprint or change route prefix | Directory Structure, Conventions |
+| Change API response format or core conventions | Conventions |
+| Add/change dependencies (requirements.txt) | Tech Stack |
+| Change user role definitions | Conventions → Roles |
+
+## Rules
+- Only edit the affected section, do not rewrite the whole file
+- After updating, inform the user in one line: "Updated `project-context.mdc`: [brief summary]"

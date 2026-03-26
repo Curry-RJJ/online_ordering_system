@@ -1,0 +1,75 @@
+---
+description: Project architecture context for online ordering system
+alwaysApply: false
+---
+
+# Online Ordering System — Project Context
+
+## Tech Stack
+- **Backend**: Python 3.9 + Flask 3.x
+- **ORM**: Flask-SQLAlchemy (SQLite dev / MySQL prod)
+- **Auth**: Flask-Login (Jinja2 pages) + Flask-JWT-Extended (REST API)
+- **Cache/Rate-limit**: Flask-Caching + Flask-Limiter (Redis or memory fallback)
+- **Task queue**: Celery (`celery_worker.py`, tasks in `app/tasks/`)
+- **CSRF**: Flask-WTF (API blueprint exempted)
+- **Deploy**: Docker Compose + Nginx + Gunicorn
+
+## Directory Structure
+```
+app/
+├── __init__.py        # create_app() factory, registers all extensions & blueprints
+├── models.py          # All SQLAlchemy models
+├── errors.py          # Custom exceptions
+├── utils.py           # Helpers (image upload, etc.)
+├── api/               # REST API blueprint (JWT auth, prefix /api)
+│   ├── auth.py        # /api/auth/*
+│   ├── cart.py        # /api/cart/*
+│   ├── orders.py      # /api/orders/*
+│   ├── restaurants.py # /api/restaurants/*
+│   └── schemas.py     # marshmallow schemas
+├── routes/            # Jinja2 page blueprints (Flask-Login auth)
+│   ├── auth.py        # /login /register /logout
+│   ├── cart.py        # /cart/*
+│   ├── category.py    # /category/*
+│   ├── dish.py        # /dish/*
+│   ├── order.py       # /order/*
+│   ├── restaurant.py  # /restaurant/*
+│   └── restaurant_category.py
+├── services/cart_service.py  # Cart business logic
+├── tasks/order_tasks.py      # Celery async tasks
+├── templates/         # Jinja2 templates (sub-dirs by feature)
+└── static/            # CSS, images
+tests/                 # pytest (fixtures in conftest.py)
+migrations/            # Flask-Migrate files
+```
+
+## Models (app/models.py)
+| Model | Key Fields | Relations |
+|-------|-----------|-----------|
+| `User` | id, username, password, role(user/admin/merchant), restaurant_id | → Address, Order, Review, CartItem |
+| `Restaurant` | id, name, status(open/closed/busy/offline), is_active, delivery_fee, min_order, rating | → Dish, Order, Review, User |
+| `Dish` | id, name, price, restaurant_id, category_id, is_available | → CartItem, OrderItem |
+| `Category` | id, name (dish category) | → Dish |
+| `RestaurantCategory` | id, name (restaurant type) | — |
+| `Order` | id, user_id, restaurant_id, status, total_price, address | → OrderItem, Review |
+| `OrderItem` | id, order_id, dish_id, quantity, price | — |
+| `CartItem` | id, user_id, dish_id, quantity | — |
+| `Review` | id, user_id, restaurant_id, order_id, rating, comment | — |
+| `Address` | id, user_id, name, phone, address, is_default | — |
+
+## Conventions
+- **API response**: `{'code': 200, 'message': '...', 'data': {...}}`
+- **Rate limit**: global 200 req/min/IP; stricter on sensitive endpoints (login, etc.)
+- **Image upload**: saved to `app/static/images/{dishes|logos|banners}/`, return relative path
+- **Roles**: `user` / `merchant` (restaurant admin) / `admin` (superadmin)
+- **Blueprint prefix**: Jinja2 pages — none; REST API — `/api`
+
+## Server
+- **IP**: 43.155.34.32 | **Domain**: `beautyteam.sztu1881.com`（HTTPS 已上线，证书有效期至 2026-06-24）
+- **SSH**: `ssh root@43.155.34.32` (key-based, no password)
+- **Deploy guide**: `docs/落地部署清单.md`
+
+## Notes
+- After model changes: `flask db migrate && flask db upgrade`
+- New API routes: register blueprint in `app/api/__init__.py`
+- Tests: `pytest` in `tests/`
