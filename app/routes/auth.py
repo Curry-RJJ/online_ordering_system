@@ -2,12 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User, AdminApplication, MerchantApplication, Address, Restaurant
-from app import db
+from app import db, limiter
 from sqlalchemy.exc import IntegrityError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute; 20 per hour")
 def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -45,6 +46,7 @@ def register():
     return render_template('auth/register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute; 50 per hour")
 def login():
     if request.method == 'POST':
         username = request.form['username']

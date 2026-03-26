@@ -80,9 +80,10 @@ def create_app(config_name='default'):
     os.makedirs(os.path.join(basedir, 'static', 'images', 'logos'), exist_ok=True)
     os.makedirs(os.path.join(basedir, 'static', 'images', 'banners'), exist_ok=True)
 
-    # 限流存储：有 Redis 用 Redis，否则降级到内存（开发/测试环境）
+    # 限流存储：通过 app.config 注入，让 limiter.init_app 读取正确的 storage
     redis_url = os.environ.get('REDIS_URL')
-    limiter._storage_uri = redis_url if redis_url else 'memory://'
+    app.config['RATELIMIT_STORAGE_URI'] = redis_url if redis_url else 'memory://'
+    app.config['RATELIMIT_STRATEGY'] = 'fixed-window'
 
     db.init_app(app)
     login_manager.init_app(app)
