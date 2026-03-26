@@ -140,6 +140,7 @@
         {% if order.user_id == current_user.id %}
             {% if order.status in ['pending'] %}
                 <form method="POST" action="{{ url_for('order.cancel_order', order_id=order.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger"
                             onclick="return confirm('确认取消此订单？')">取消订单</button>
                 </form>
@@ -160,6 +161,7 @@
 
             {% if order.status == 'cancelled' %}
                 <form method="POST" action="{{ url_for('order.user_delete_order', order_id=order.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-danger"
                             onclick="return confirm('确认删除此订单？此操作不可恢复！')">删除订单</button>
                 </form>

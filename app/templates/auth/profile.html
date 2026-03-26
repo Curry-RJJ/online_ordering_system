@@ -15,6 +15,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('auth.profile') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="username" class="form-label">用户名</label>
@@ -304,6 +305,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="addAddressForm" method="POST" action="{{ url_for('auth.add_address') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="add_name" class="form-label">收货人姓名</label>
@@ -342,6 +344,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="editAddressForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <input type="hidden" id="edit_address_id" name="address_id">
                     <div class="mb-3">

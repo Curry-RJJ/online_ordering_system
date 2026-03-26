@@ -151,6 +151,7 @@
                                             {% if status != order.status %}
                                             <li>
                                                 <form method="post" action="{{ url_for('order.update_status', order_id=order.id) }}" style="display:inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <input type="hidden" name="status" value="{{ status }}">
                                                     <button type="submit" class="dropdown-item">
                                                         <i class="fas fa-{{ icon }} me-2"></i>{{ label }}
@@ -163,6 +164,7 @@
                                         <li>
                                             <form method="post" action="{{ url_for('order.admin_delete_order', order_id=order.id) }}"
                                                   onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="dropdown-item text-danger">
                                                     <i class="fas fa-trash me-2"></i>删除订单
                                                 </button>
@@ -175,6 +177,7 @@
                                 {% if order.status == 'pending' %}
                                     <form method="POST" action="{{ url_for('order.cancel_order', order_id=order.id) }}"
                                           onsubmit="return confirm('确认取消订单？')" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">
                                             <i class="fas fa-times me-1"></i>取消订单
                                         </button>
@@ -190,6 +193,7 @@
                                     </a>
                                     <form method="post" action="{{ url_for('order.user_delete_order', order_id=order.id) }}"
                                           onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">
                                             <i class="fas fa-trash me-1"></i>删除
                                         </button>
@@ -198,6 +202,7 @@
                                     <span class="text-muted me-2">订单已取消</span>
                                     <form method="post" action="{{ url_for('order.user_delete_order', order_id=order.id) }}"
                                           onsubmit="return confirm('确认删除订单？此操作不可恢复！')" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">
                                             <i class="fas fa-trash me-1"></i>删除
                                         </button>

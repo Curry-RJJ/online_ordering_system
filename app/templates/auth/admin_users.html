@@ -72,6 +72,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="roleForm" method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <p>用户：<strong id="modalUsername"></strong></p>
                     <p>当前角色：<span id="modalCurrentRole" class="badge"></span></p>

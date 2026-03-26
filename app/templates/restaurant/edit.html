@@ -14,6 +14,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('restaurant.edit_restaurant', restaurant_id=restaurant.id) }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <!-- 基本信息 -->
                         <h5 class="mb-3">基本信息</h5>
                         <div class="row">

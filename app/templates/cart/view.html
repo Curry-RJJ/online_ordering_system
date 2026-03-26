@@ -425,6 +425,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
 function updateQuantity(cartItemId, newQuantity) {
     if (newQuantity < 1) {
         removeItem(cartItemId);
@@ -435,6 +439,7 @@ function updateQuantity(cartItemId, newQuantity) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
         },
         body: JSON.stringify({
             cart_item_id: cartItemId,
@@ -464,6 +469,7 @@ function removeItem(cartItemId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
         },
         body: JSON.stringify({
             cart_item_id: cartItemId

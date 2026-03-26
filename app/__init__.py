@@ -5,6 +5,7 @@ from flask_caching import Cache
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 from datetime import timedelta
 import os
 
@@ -12,6 +13,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 cache = Cache()
 jwt = JWTManager()
+csrf = CSRFProtect()
 # Limiter 单例：装饰器在各模块直接 import 使用
 limiter = Limiter(
     key_func=get_remote_address,
@@ -91,6 +93,7 @@ def create_app(config_name='default'):
     cache.init_app(app)
     jwt.init_app(app)
     limiter.init_app(app)
+    csrf.init_app(app)
 
     # 统一限流超出响应格式（429）
     @app.errorhandler(429)
@@ -131,8 +134,9 @@ def create_app(config_name='default'):
     app.register_blueprint(restaurant_category_bp)
     app.register_blueprint(category_bp)
 
-    # 注册 RESTful API 蓝图
+    # 注册 RESTful API 蓝图（JWT 鉴权，排除 CSRF 检查）
     from app.api import api_bp
+    csrf.exempt(api_bp)
     app.register_blueprint(api_bp)
 
     @app.route('/')

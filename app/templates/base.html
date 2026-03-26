@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}美团外卖 - 网上订餐{% endblock %}</title>
     
     <!-- 样式表 -->
@@ -172,6 +173,13 @@
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script>
+    // 全局为所有 jQuery AJAX 请求自动注入 CSRF Token
+    $(function() {
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+        $.ajaxSetup({ headers: { 'X-CSRFToken': csrfToken } });
+    });
+    </script>
     
     <!-- Flash消息处理 - 直接转换为Toast -->
     {% with messages = get_flashed_messages(with_categories=true) %}
