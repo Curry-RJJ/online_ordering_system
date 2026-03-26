@@ -138,24 +138,25 @@ services:
     networks:
       - app_network
 
-  # ── Nginx 反向代理（服务器部署时取消注释）────────────────────
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: online_ordering_nginx
-  #   restart: always
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - /etc/letsencrypt:/etc/letsencrypt:ro
-  #     - /var/www/certbot:/var/www/certbot:ro
-  #     - ./app/static:/app/app/static:ro
-  #     - ./logs/nginx:/var/log/nginx
-  #   depends_on:
-  #     - web
-  #   networks:
-  #     - app_network
+  # ── Nginx 反向代理 ────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: online_ordering_nginx
+    restart: always
+    ports:
+      - "80:80"
+      # "443:443"  # 域名+SSL证书到位后取消此行注释
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./app/static:/app/app/static:ro
+      - ./logs/nginx:/var/log/nginx
+      # 域名+SSL证书到位后取消以下两行注释：
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
+      # - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - web
+    networks:
+      - app_network
 
 volumes:
   mysql_data:
