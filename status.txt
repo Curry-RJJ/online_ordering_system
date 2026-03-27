@@ -1,4 +1,0 @@
-﻿add.html: 240琛?| AMap鑴氭湰=True | PlaceSearch=True | 鍦板浘Modal=False
-edit.html: 320琛?| AMap鑴氭湰=True | PlaceSearch=True | 鍦板浘Modal=False
-list.html: 1213琛?| AMap鑴氭湰=True | PlaceSearch=True | 鍦板浘Modal=True
-profile.html: 434琛?| AMap鑴氭湰=False | PlaceSearch=False | 鍦板浘Modal=False
