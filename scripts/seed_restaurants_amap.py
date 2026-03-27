@@ -99,16 +99,21 @@ def search_amap(keyword: str, city: str = '深圳',
         'extensions': 'base',
         'output':    'JSON',
     }
-    try:
-        resp = requests.get(url, params=params, timeout=10)
-        data = resp.json()
-        if data.get('status') == '1':
-            return data.get('pois', [])
-        print(f'  [!] 高德搜索返回异常: {data.get("info")}')
-        return []
-    except Exception as e:
-        print(f'  [!] 高德搜索请求失败 "{keyword}": {e}')
-        return []
+    for attempt in range(1, 4):
+        try:
+            resp = requests.get(url, params=params, timeout=20)
+            data = resp.json()
+            if data.get('status') == '1':
+                return data.get('pois', [])
+            print(f'  [!] 高德搜索返回异常: {data.get("info")}')
+            return []
+        except Exception as e:
+            if attempt < 3:
+                print(f'  [!] 高德搜索超时 "{keyword}"，第 {attempt} 次重试...')
+                time.sleep(3)
+            else:
+                print(f'  [!] 高德搜索请求失败 "{keyword}"（重试3次）: {e}')
+    return []
 
 
 # ──────────────────────────────────────────────
