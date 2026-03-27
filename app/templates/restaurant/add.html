@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}添加餐厅 - 美团外卖{% endblock %}
+{% block title %}???? - ????{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -9,38 +9,38 @@
             <div class="card shadow">
                 <div class="card-header bg-warning">
                     <h4 class="mb-0 text-dark">
-                        <i class="fas fa-plus-circle me-2"></i>添加餐厅                    </h4>
+                        <i class="fas fa-plus-circle me-2"></i>????                    </h4>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('restaurant.add_restaurant') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <!-- 基本信息 -->
-                        <h5 class="mb-3">基本信息</h5>
+                        <!-- ???? -->
+                        <h5 class="mb-3">????</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="name" class="form-label">餐厅名称 <span class="text-danger">*</span></label>
+                                <label for="name" class="form-label">???? <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="phone" class="form-label">联系电话</label>
+                                <label for="phone" class="form-label">????</label>
                                 <input type="tel" class="form-control" id="phone" name="phone">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="description" class="form-label">餐厅描述</label>
+                            <label for="description" class="form-label">????</label>
                             <textarea class="form-control" id="description" name="description" rows="3" 
-                                      placeholder="介绍一下餐厅的特色..."></textarea>
+                                      placeholder="?????????..."></textarea>
                         </div>
 
                         <div class="mb-3">
-                            <label for="address" class="form-label">餐厅地址 <span class="text-danger">*</span></label>
+                            <label for="address" class="form-label">???? <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="address" name="address" required>
                         </div>
 
-                        <!-- 位置选点（弹窗方式） -->
+                        <!-- ?????????? -->
                         <h5 class="mb-3 mt-4">
-                            <i class="fas fa-map-marker-alt me-2 text-warning"></i>餐厅位置
+                            <i class="fas fa-map-marker-alt me-2 text-warning"></i>????
                             <span class="text-danger">*</span>
                         </h5>
                         <input type="hidden" id="latitude"  name="latitude">
@@ -49,107 +49,107 @@
                              style="border:1.5px solid #e2e8f0;background:#f8fafc;">
                             <i class="fas fa-map-pin fa-lg text-warning"></i>
                             <span id="add-coords-display" class="text-muted flex-grow-1 small">
-                                尚未选择位置，请点击按钮在地图上标记
+                                ??????????????????
                             </span>
                             <button type="button" id="btn-open-add-map"
                                     class="btn btn-warning btn-sm fw-semibold">
-                                <i class="fas fa-map-marked-alt me-1"></i>在地图上选点
+                                <i class="fas fa-map-marked-alt me-1"></i>??????
                             </button>
                         </div>
 
-                        <!-- 营业信息 -->
-                        <h5 class="mb-3 mt-4">营业信息</h5>
+                        <!-- ???? -->
+                        <h5 class="mb-3 mt-4">????</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="business_hours" class="form-label">营业时间</label>
+                                <label for="business_hours" class="form-label">????</label>
                                 <input type="text" class="form-control" id="business_hours" name="business_hours" 
-                                       placeholder="例如：9:00-22:00" value="09:00-22:00">
+                                       placeholder="???9:00-22:00" value="09:00-22:00">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="cuisine_type" class="form-label">菜系类型</label>
+                                <label for="cuisine_type" class="form-label">????</label>
                                 <select class="form-select" id="cuisine_type" name="cuisine_type">
-                                    <option value="中餐">中餐</option>
-                                    <option value="西餐">西餐</option>
-                                    <option value="日料">日料</option>
-                                    <option value="韩餐">韩餐</option>
-                                    <option value="快餐">快餐</option>
-                                    <option value="饮品">饮品</option>
-                                    <option value="其他">其他</option>
+                                    <option value="??">??</option>
+                                    <option value="??">??</option>
+                                    <option value="??">??</option>
+                                    <option value="??">??</option>
+                                    <option value="??">??</option>
+                                    <option value="??">??</option>
+                                    <option value="??">??</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- 配送信息-->
-                        <h5 class="mb-3 mt-4">配送信息</h5>
+                        <!-- ????-->
+                        <h5 class="mb-3 mt-4">????</h5>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="min_order" class="form-label">起送金额（元）</label>
+                                <label for="min_order" class="form-label">???????</label>
                                 <input type="number" class="form-control" id="min_order" name="min_order" 
                                        value="20" min="0" step="1">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="delivery_fee" class="form-label">配送费（元）</label>
+                                <label for="delivery_fee" class="form-label">??????</label>
                                 <input type="number" class="form-control" id="delivery_fee" name="delivery_fee" 
                                        value="5" min="0" step="0.5">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="delivery_time" class="form-label">预计送达时间（分钟）</label>
+                                <label for="delivery_time" class="form-label">??????????</label>
                                 <input type="number" class="form-control" id="delivery_time" name="delivery_time" 
                                        value="30" min="10" step="5">
                             </div>
                         </div>
 
-                        <!-- 评分信息 -->
-                        <h5 class="mb-3 mt-4">评分信息</h5>
+                        <!-- ???? -->
+                        <h5 class="mb-3 mt-4">????</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="rating" class="form-label">初始评分</label>
+                                <label for="rating" class="form-label">????</label>
                                 <input type="number" class="form-control" id="rating" name="rating" 
                                        value="4.5" min="0" max="5" step="0.1">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="review_count" class="form-label">初始评价</label>
+                                <label for="review_count" class="form-label">????</label>
                                 <input type="number" class="form-control" id="review_count" name="review_count" 
                                        value="0" min="0">
                             </div>
                         </div>
 
-                        <!-- 图片上传 -->
-                        <h5 class="mb-3 mt-4">餐厅图片</h5>
+                        <!-- ???? -->
+                        <h5 class="mb-3 mt-4">????</h5>
                         <div class="mb-3">
-                            <label for="logo" class="form-label">餐厅Logo</label>
+                            <label for="logo" class="form-label">??Logo</label>
                             <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
-                            <small class="form-text text-muted">建议上传正方形图片，支持 JPG、PNG 格式</small>
+                            <small class="form-text text-muted">???????????? JPG?PNG ??</small>
                         </div>
 
                         <div class="mb-3">
-                            <label for="banner" class="form-label">餐厅横幅</label>
+                            <label for="banner" class="form-label">????</label>
                             <input type="file" class="form-control" id="banner" name="banner" accept="image/*">
-                            <small class="form-text text-muted">建议尺寸： 1200x400，支持JPG、PNG 格式</small>
+                            <small class="form-text text-muted">????? 1200x400???JPG?PNG ??</small>
                         </div>
 
-                        <!-- 状态设置-->
-                        <h5 class="mb-3 mt-4">状态设置</h5>
+                        <!-- ????-->
+                        <h5 class="mb-3 mt-4">????</h5>
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="is_open" name="is_open" checked>
                             <label class="form-check-label" for="is_open">
-                                营业状态                            </label>
+                                ????                            </label>
                         </div>
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
                             <label class="form-check-label" for="is_featured">
-                                推荐餐厅
+                                ????
                             </label>
                         </div>
 
-                        <!-- 提交按钮 -->
+                        <!-- ???? -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <a href="{{ url_for('restaurant.list_restaurants') }}" class="btn btn-secondary">
-                                <i class="fas fa-times me-2"></i>取消
+                                <i class="fas fa-times me-2"></i>??
                             </a>
                             <button type="submit" class="btn btn-warning">
-                                <i class="fas fa-save me-2"></i>保存餐厅
+                                <i class="fas fa-save me-2"></i>????
                             </button>
                         </div>
                     </form>
@@ -159,13 +159,13 @@
     </div>
 </div>
 
-<!-- 餐厅位置选点弹窗 -->
+<!-- ???????? -->
 <div class="modal fade" id="addMapModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header" style="background:linear-gradient(135deg,#ffd900,#ff8800);">
                 <h5 class="modal-title fw-bold">
-                    <i class="fas fa-map-marker-alt me-2"></i>标记餐厅位置
+                    <i class="fas fa-map-marker-alt me-2"></i>??????
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -174,7 +174,7 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input id="add-modal-search" type="text" class="form-control"
-                               placeholder="搜索餐厅所在地址" autocomplete="off">
+                               placeholder="????????" autocomplete="off">
                     </div>
                     <button type="button" class="btn btn-outline-secondary" id="add-modal-btn-locate">
                         <i class="fas fa-crosshairs"></i>
@@ -183,13 +183,13 @@
                 <div id="add-modal-map-div"
                      style="height:360px;border-radius:8px;border:1.5px solid #e2e8f0;overflow:hidden;"></div>
                 <div id="add-modal-addr-display" class="mt-2 text-muted small">
-                    请在地图上点击或拖动选择餐厅位置
+                    ????????????????
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">??</button>
                 <button type="button" class="btn btn-warning fw-bold" id="add-modal-btn-confirm" disabled>
-                    <i class="fas fa-check me-1"></i>确认位置
+                    <i class="fas fa-check me-1"></i>????
                 </button>
             </div>
         </div>
@@ -235,12 +235,12 @@ h5 {
 
     const modal = document.getElementById('addMapModal');
 
-    // 打开弹窗
+    // ????
     document.getElementById('btn-open-add-map').addEventListener('click', function () {
         bootstrap.Modal.getOrCreateInstance(modal).show();
     });
 
-    // 弹窗展示后初始化地图（只初始化一次）
+    // ??????????????????
     modal.addEventListener('shown.bs.modal', function () {
         if (pickerInited) return;
         pickerInited = true;
@@ -251,7 +251,7 @@ h5 {
                 pendingLng  = lng;
                 pendingAddr = address;
                 document.getElementById('add-modal-addr-display').textContent =
-                    '已选：' + (address || lat.toFixed(5) + ', ' + lng.toFixed(5));
+                    '???' + (address || lat.toFixed(5) + ', ' + lng.toFixed(5));
                 document.getElementById('add-modal-btn-confirm').disabled = false;
             }
         });
@@ -266,7 +266,8 @@ h5 {
         });
     });
 
-    // 确认位置 写入隐藏字段，关闭弹窗    document.getElementById('add-modal-btn-confirm').addEventListener('click', function () {
+    // ???? ? ???????????
+    document.getElementById('add-modal-btn-confirm').addEventListener('click', function () {
         if (pendingLat === null) return;
         document.getElementById('latitude').value  = pendingLat;
         document.getElementById('longitude').value = pendingLng;
@@ -278,11 +279,12 @@ h5 {
         bootstrap.Modal.getOrCreateInstance(modal).hide();
     });
 
-    // 表单提交前校验坐标    document.querySelector('form').addEventListener('submit', function (e) {
+    // ?????????
+    document.querySelector('form').addEventListener('submit', function (e) {
         if (!document.getElementById('latitude').value) {
             e.preventDefault();
             document.getElementById('add-modal-addr-display').innerHTML =
-                '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>请先在地图上选择餐厅位置</span>';
+                '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>????????????</span>';
             bootstrap.Modal.getOrCreateInstance(modal).show();
         }
     });

@@ -973,6 +973,41 @@
 }
 </style>
 
+<!-- 首次访问位置授权弹窗 -->
+<div class="modal fade" id="locationAuthModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content" style="border-radius:20px;overflow:hidden;border:none;
+             box-shadow:0 20px 60px rgba(0,0,0,0.22);">
+            <div class="modal-body text-center px-4 pt-5 pb-3">
+                <div style="font-size:3rem;margin-bottom:14px;">📍</div>
+                <h5 style="font-size:17px;font-weight:700;color:#1e293b;margin-bottom:10px;">
+                    开启位置服务
+                </h5>
+                <p style="font-size:13px;color:#64748b;line-height:1.7;margin:0 0 8px;">
+                    允许后可为你推荐<strong>附近餐厅</strong>并显示距离，位置信息仅用于餐厅筛选。
+                </p>
+                <p style="font-size:11.5px;color:#94a3b8;margin:0;">
+                    定位基于 IP 地址（区/市级精度），不会触发浏览器权限弹窗。
+                </p>
+            </div>
+            <div class="modal-footer flex-column gap-2 border-0 px-4 pb-5 pt-2">
+                <button type="button" id="btn-auth-allow" class="btn btn-warning w-100 fw-bold"
+                        style="border-radius:12px;padding:12px;font-size:15px;">
+                    <span id="auth-allow-text"><i class="fas fa-location-arrow me-2"></i>开启定位</span>
+                    <span id="auth-allow-loading" class="d-none">
+                        <span class="spinner-border spinner-border-sm me-2"></span>定位中…
+                    </span>
+                </button>
+                <button type="button" id="btn-auth-skip" class="btn btn-link text-secondary w-100"
+                        style="font-size:13px;text-decoration:none;">
+                    暂不开启
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 切换位置弹窗 -->
 <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1168,6 +1203,45 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+})();
+
+// ── 首次位置授权弹窗 ──────────────────────────────────────────────────────
+(function () {
+    {% if current_user.is_authenticated and not current_user.location_confirmed %}
+    const authEl = document.getElementById('locationAuthModal');
+    if (!authEl) return;
+    const authModal = bootstrap.Modal.getOrCreateInstance(authEl);
+    authModal.show();
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    document.getElementById('btn-auth-allow').addEventListener('click', function () {
+        document.getElementById('auth-allow-text').classList.add('d-none');
+        document.getElementById('auth-allow-loading').classList.remove('d-none');
+        this.disabled = true;
+        document.getElementById('btn-auth-skip').disabled = true;
+
+        fetch('{{ url_for("location.detect_by_ip") }}', {
+            method : 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(() => { window.location.reload(); })
+        .catch(() => { window.location.reload(); });
+    });
+
+    document.getElementById('btn-auth-skip').addEventListener('click', function () {
+        this.disabled = true;
+        document.getElementById('btn-auth-allow').disabled = true;
+
+        fetch('{{ url_for("location.skip_location") }}', {
+            method : 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+        })
+        .then(() => { window.location.reload(); })
+        .catch(() => { window.location.reload(); });
+    });
+    {% endif %}
 })();
 
 // 通知函数

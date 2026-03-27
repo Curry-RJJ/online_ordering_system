@@ -315,7 +315,8 @@ h5 {
         });
     });
 
-    // 确认位置  写入隐藏字段，关闭弹窗    document.getElementById('edit-modal-btn-confirm').addEventListener('click', function () {
+    // 确认位置 → 写入隐藏字段，关闭弹窗
+    document.getElementById('edit-modal-btn-confirm').addEventListener('click', function () {
         if (pendingLat === null) return;
         document.getElementById('latitude').value  = pendingLat;
         document.getElementById('longitude').value = pendingLng;
