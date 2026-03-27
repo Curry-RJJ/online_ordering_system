@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
 from flask_login import login_required, current_user
 from app.models import Restaurant, Dish, Category, Review, CartItem, RestaurantChangeRequest, OrderItem
-from app.utils import save_uploaded_image, delete_image_file, create_image_directories
+from app.utils import save_uploaded_image, delete_image_file, create_image_directories, haversine
 from app import db, cache
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
@@ -20,7 +20,8 @@ def _to_restaurant_dict(r):
                 cuisine_type=r.cuisine_type, business_hours=r.business_hours,
                 delivery_fee=r.delivery_fee, min_order=r.min_order,
                 rating=r.rating, review_count=r.review_count,
-                status=r.status, is_active=r.is_active)
+                status=r.status, is_active=r.is_active,
+                latitude=r.latitude, longitude=r.longitude)
 
 
 def _to_category_dict(c):
@@ -55,20 +56,47 @@ def _invalidate_restaurant_cache(restaurant_id=None):
 
 restaurant_bp = Blueprint('restaurant', __name__, url_prefix='/restaurant')
 
+@restaurant_bp.route('/set-location', methods=['POST'])
+@login_required
+def set_user_location():
+    """更新 session 中的用户位置（列表页「切换位置」按钮调用）"""
+    data = request.get_json() or {}
+    try:
+        lat = float(data['lat'])
+        lng = float(data['lng'])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({'success': False, 'message': '坐标无效'}), 400
+    session['user_lat']     = lat
+    session['user_lng']     = lng
+    session['user_address'] = data.get('address', '')
+    return jsonify({'success': True})
+
+
 @restaurant_bp.route('/')
 def list_restaurants():
     """餐厅列表页面"""
     try:
-        keyword = request.args.get('keyword', '')
+        keyword     = request.args.get('keyword', '')
         category_id = request.args.get('category', type=int)
-        sort_by = request.args.get('sort', 'rating')
-        # BUG-13 修复：distance 排序需要用户位置，当前未接入地图 API，回退到评分排序
-        if sort_by == 'distance':
+        sort_by     = request.args.get('sort', 'rating')
+
+        # 读取用户位置（首次登录时已写入 session）
+        user_lat     = session.get('user_lat')
+        user_lng     = session.get('user_lng')
+        user_address = session.get('user_address', '')
+        has_location = (user_lat is not None and user_lng is not None)
+
+        # 无位置时 distance 排序无意义，回退到评分（BUG-13 修复）
+        if sort_by == 'distance' and not has_location:
             sort_by = 'rating'
 
-        version = _get_list_version()
-        cache_key = f'restaurant_list_v{version}:{keyword}:{category_id}:{sort_by}'
-        cached = cache.get(cache_key)
+        # 有位置时每人结果不同，不走公共缓存
+        cache_key = None
+        cached    = None
+        if not has_location:
+            version   = _get_list_version()
+            cache_key = f'restaurant_list_v{version}:{keyword}:{category_id}:{sort_by}'
+            cached    = cache.get(cache_key)
 
         if cached is None:
             query = Restaurant.query.filter_by(status='open')
@@ -88,29 +116,58 @@ def list_restaurants():
             if category_id:
                 query = query.join(Dish).join(Category).filter(Category.id == category_id)
 
-            if sort_by == 'rating':
-                query = query.order_by(Restaurant.rating.desc())
-            elif sort_by == 'sales':
-                query = query.order_by(Restaurant.review_count.desc())
-            else:
-                query = query.order_by(Restaurant.created_at.desc())
+            # 有位置时先不排序，后面按距离处理；无位置时数据库排序
+            if not has_location:
+                if sort_by == 'rating':
+                    query = query.order_by(Restaurant.rating.desc())
+                elif sort_by == 'sales':
+                    query = query.order_by(Restaurant.review_count.desc())
+                else:
+                    query = query.order_by(Restaurant.created_at.desc())
 
-            restaurants_raw = query.distinct().all()
-            categories_raw = Category.query.order_by(Category.sort_order).all()
+            restaurants_raw  = query.distinct().all()
+            categories_raw   = Category.query.order_by(Category.sort_order).all()
 
-            # 计算全站平均评分（只统计有真实评价的餐厅）
+            # 计算全站平均评分
             rated = [r for r in restaurants_raw if r.review_count and r.review_count > 0]
-            if rated:
-                avg_rating = round(sum(r.rating for r in rated) / len(rated), 1)
+            avg_rating = round(sum(r.rating for r in rated) / len(rated), 1) if rated else None
+
+            if has_location:
+                # 计算距离，过滤 > 10 km
+                result = []
+                for r in restaurants_raw:
+                    d = _to_restaurant_dict(r)
+                    if r.latitude and r.longitude:
+                        dist = haversine(user_lat, user_lng, r.latitude, r.longitude)
+                        if dist > 10.0:
+                            continue        # 超出范围，丢弃
+                        d['distance'] = round(dist, 1)
+                    else:
+                        d['distance'] = None  # 无坐标餐厅仍显示，排在末尾
+                    result.append(d)
+
+                # 按选择的维度排序
+                if sort_by == 'distance':
+                    result.sort(key=lambda x: (x['distance'] is None, x['distance'] or 999))
+                elif sort_by == 'rating':
+                    result.sort(key=lambda x: -(x['rating'] or 0))
+                elif sort_by == 'sales':
+                    result.sort(key=lambda x: -(x['review_count'] or 0))
+
+                restaurants_list = result
             else:
-                avg_rating = None  # 无评价时显示"暂无评分"
+                restaurants_list = [_to_restaurant_dict(r) for r in restaurants_raw]
+                for r in restaurants_list:
+                    r['distance'] = None
 
             cached = {
-                'restaurants': [_to_restaurant_dict(r) for r in restaurants_raw],
-                'categories': [_to_category_dict(c) for c in categories_raw],
-                'avg_rating': avg_rating,
+                'restaurants': restaurants_list,
+                'categories':  [_to_category_dict(c) for c in categories_raw],
+                'avg_rating':  avg_rating,
             }
-            cache.set(cache_key, cached, timeout=300)
+            # 无位置时写入公共缓存
+            if cache_key:
+                cache.set(cache_key, cached, timeout=300)
 
         return render_template('restaurant/list.html',
                                restaurants=cached['restaurants'],
@@ -118,7 +175,9 @@ def list_restaurants():
                                avg_rating=cached.get('avg_rating'),
                                keyword=keyword,
                                current_category=category_id,
-                               sort_by=sort_by)
+                               sort_by=sort_by,
+                               user_address=user_address,
+                               has_location=has_location)
     except Exception as e:
         current_app.logger.error(f"Error in list_restaurants: {e}")
         return render_template('errors/500.html'), 500
@@ -286,6 +345,14 @@ def add_restaurant():
         except (ValueError, TypeError):
             review_count = 0
 
+        # 解析坐标，必须选点
+        try:
+            latitude  = float(request.form['latitude'])
+            longitude = float(request.form['longitude'])
+        except (KeyError, ValueError, TypeError):
+            flash('请在地图上选择餐厅位置（必填）', 'error')
+            return redirect(url_for('restaurant.add_restaurant'))
+
         # 创建餐厅对象
         restaurant = Restaurant(
             name=request.form['name'],
@@ -300,7 +367,9 @@ def add_restaurant():
             review_count=review_count,
             status='open' if request.form.get('is_open') == 'on' else 'closed',
             logo=logo_path,
-            banner=banner_path
+            banner=banner_path,
+            latitude=latitude,
+            longitude=longitude,
         )
         
         db.session.add(restaurant)
@@ -342,6 +411,13 @@ def edit_restaurant(restaurant_id):
         except (ValueError, TypeError):
             _min_order = 0.0
 
+        # 解析可选坐标
+        try:
+            _lat = float(request.form['latitude'])  if request.form.get('latitude')  else None
+            _lng = float(request.form['longitude']) if request.form.get('longitude') else None
+        except (ValueError, TypeError):
+            _lat = _lng = None
+
         # 准备修改数据
         change_data = {
             'name': request.form['name'],
@@ -352,6 +428,10 @@ def edit_restaurant(restaurant_id):
             'delivery_fee': _delivery_fee,
             'min_order': _min_order,
         }
+        if _lat is not None:
+            change_data['latitude']  = _lat
+        if _lng is not None:
+            change_data['longitude'] = _lng
         
         # 处理图片上传（商家管理员也需要上传图片）
         logo_file = request.files.get('logo_file')
@@ -380,6 +460,10 @@ def edit_restaurant(restaurant_id):
             restaurant.delivery_fee = change_data['delivery_fee']
             restaurant.min_order = change_data['min_order']
             restaurant.status = request.form.get('status', 'open')
+            if 'latitude' in change_data:
+                restaurant.latitude  = change_data['latitude']
+            if 'longitude' in change_data:
+                restaurant.longitude = change_data['longitude']
             try:
                 restaurant.rating = float(request.form.get('rating', 4.5))
             except (ValueError, TypeError):

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# 如果传入了自定义命令（如 pytest），跳过 MySQL 等待和 DB 初始化，直接执行
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 # 等待MySQL完全启动
 echo "等待MySQL数据库启动..."
 while ! nc -z mysql 3306 2>/dev/null; do

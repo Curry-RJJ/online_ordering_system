@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+from typing import Optional, Tuple
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 import uuid
@@ -155,6 +156,86 @@ def delete_image_file(image_path):
             _app2.logger.error(f"delete_image_file: 删除图片文件失败: {e}")
         except Exception:
             pass  # 无 app 上下文时静默失败
+
+
+def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """用 Haversine 公式计算两点球面距离，返回千米数（纯 Python，无 API 消耗）"""
+    import math
+    R = 6371.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return R * 2 * math.asin(math.sqrt(a))
+
+
+def amap_ip_locate(ip: str) -> Optional[Tuple[float, float, str]]:
+    """
+    调高德 IP 定位接口，返回 (lat, lng, city) 或 None。
+    仅作兜底定位（浏览器拒绝 GPS 时使用），精度约市级。
+    """
+    import requests
+    from flask import current_app
+    key = current_app.config.get('AMAP_WEB_KEY', '')
+    if not key:
+        return None
+    try:
+        resp = requests.get(
+            'https://restapi.amap.com/v3/ip',
+            params={'key': key, 'ip': ip},
+            timeout=5
+        )
+        data = resp.json()
+        if data.get('status') != '1' or not data.get('rectangle'):
+            return None
+        # rectangle 格式：'lng1,lat1;lng2,lat2'（矩形对角线两点），取中心点
+        pts = data['rectangle'].split(';')
+        lng1, lat1 = map(float, pts[0].split(','))
+        lng2, lat2 = map(float, pts[1].split(','))
+        lat = (lat1 + lat2) / 2
+        lng = (lng1 + lng2) / 2
+        city = data.get('city') or data.get('province') or ''
+        return lat, lng, city
+    except Exception as e:
+        try:
+            current_app.logger.warning(f'amap_ip_locate 失败: {e}')
+        except Exception:
+            pass
+        return None
+
+
+def amap_regeocode(lat: float, lng: float) -> Optional[str]:
+    """
+    调高德逆地理编码接口，坐标 → 可读地址文字。
+    返回格式化地址字符串，失败返回 None。
+    """
+    import requests
+    from flask import current_app
+    key = current_app.config.get('AMAP_WEB_KEY', '')
+    if not key:
+        return None
+    try:
+        resp = requests.get(
+            'https://restapi.amap.com/v3/geocode/regeo',
+            params={
+                'key': key,
+                'location': f'{lng},{lat}',
+                'radius': 100,
+                'extensions': 'base',
+                'output': 'json'
+            },
+            timeout=5
+        )
+        data = resp.json()
+        if data.get('status') != '1':
+            return None
+        return data.get('regeocode', {}).get('formatted_address')
+    except Exception as e:
+        try:
+            current_app.logger.warning(f'amap_regeocode 失败: {e}')
+        except Exception:
+            pass
+        return None
 
 
 def create_image_directories():

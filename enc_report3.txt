@@ -1,0 +1,7 @@
+﻿绗?琛? {% block title %}涓汉璧勬枡 - 缇庡洟澶栧崠{% endblock %}
+绗?琛?             <!-- 涓汉淇℃伅鍗＄墖 -->
+绗?3琛?                         <i class="fas fa-user-edit me-2"></i>涓汉淇℃伅
+绗?1琛?                                 <label for="username" class="form-label">鐢ㄦ埛鍚?/label>
+绗?6琛?                                 <label for="email" class="form-label">閭</label>
+绗?8琛?                                        value="{{ user.email or '' }}" placeholder="璇疯緭鍏ラ偖绠?>
+绗?4琛?                                 <label for="phone" class="form-label">鎵嬫満鍙?/label>

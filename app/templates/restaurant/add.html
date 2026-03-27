@@ -9,8 +9,7 @@
             <div class="card shadow">
                 <div class="card-header bg-warning">
                     <h4 class="mb-0 text-dark">
-                        <i class="fas fa-plus-circle me-2"></i>添加新餐厅
-                    </h4>
+                        <i class="fas fa-plus-circle me-2"></i>添加餐厅                    </h4>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('restaurant.add_restaurant') }}" enctype="multipart/form-data">
@@ -39,13 +38,32 @@
                             <input type="text" class="form-control" id="address" name="address" required>
                         </div>
 
+                        <!-- 位置选点（弹窗方式） -->
+                        <h5 class="mb-3 mt-4">
+                            <i class="fas fa-map-marker-alt me-2 text-warning"></i>餐厅位置
+                            <span class="text-danger">*</span>
+                        </h5>
+                        <input type="hidden" id="latitude"  name="latitude">
+                        <input type="hidden" id="longitude" name="longitude">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded"
+                             style="border:1.5px solid #e2e8f0;background:#f8fafc;">
+                            <i class="fas fa-map-pin fa-lg text-warning"></i>
+                            <span id="add-coords-display" class="text-muted flex-grow-1 small">
+                                尚未选择位置，请点击按钮在地图上标记
+                            </span>
+                            <button type="button" id="btn-open-add-map"
+                                    class="btn btn-warning btn-sm fw-semibold">
+                                <i class="fas fa-map-marked-alt me-1"></i>在地图上选点
+                            </button>
+                        </div>
+
                         <!-- 营业信息 -->
                         <h5 class="mb-3 mt-4">营业信息</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="business_hours" class="form-label">营业时间</label>
                                 <input type="text" class="form-control" id="business_hours" name="business_hours" 
-                                       placeholder="例如：09:00-22:00" value="09:00-22:00">
+                                       placeholder="例如：9:00-22:00" value="09:00-22:00">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="cuisine_type" class="form-label">菜系类型</label>
@@ -61,7 +79,7 @@
                             </div>
                         </div>
 
-                        <!-- 配送信息 -->
+                        <!-- 配送信息-->
                         <h5 class="mb-3 mt-4">配送信息</h5>
                         <div class="row">
                             <div class="col-md-4 mb-3">
@@ -90,7 +108,7 @@
                                        value="4.5" min="0" max="5" step="0.1">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="review_count" class="form-label">初始评价数</label>
+                                <label for="review_count" class="form-label">初始评价</label>
                                 <input type="number" class="form-control" id="review_count" name="review_count" 
                                        value="0" min="0">
                             </div>
@@ -107,16 +125,15 @@
                         <div class="mb-3">
                             <label for="banner" class="form-label">餐厅横幅</label>
                             <input type="file" class="form-control" id="banner" name="banner" accept="image/*">
-                            <small class="form-text text-muted">建议尺寸 1200x400，支持 JPG、PNG 格式</small>
+                            <small class="form-text text-muted">建议尺寸： 1200x400，支持JPG、PNG 格式</small>
                         </div>
 
-                        <!-- 状态设置 -->
+                        <!-- 状态设置-->
                         <h5 class="mb-3 mt-4">状态设置</h5>
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="is_open" name="is_open" checked>
                             <label class="form-check-label" for="is_open">
-                                营业中
-                            </label>
+                                营业状态                            </label>
                         </div>
 
                         <div class="form-check form-switch mb-3">
@@ -137,6 +154,43 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 餐厅位置选点弹窗 -->
+<div class="modal fade" id="addMapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ffd900,#ff8800);">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-map-marker-alt me-2"></i>标记餐厅位置
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="d-flex gap-2 mb-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input id="add-modal-search" type="text" class="form-control"
+                               placeholder="搜索餐厅所在地址" autocomplete="off">
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary" id="add-modal-btn-locate">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+                <div id="add-modal-map-div"
+                     style="height:360px;border-radius:8px;border:1.5px solid #e2e8f0;overflow:hidden;"></div>
+                <div id="add-modal-addr-display" class="mt-2 text-muted small">
+                    请在地图上点击或拖动选择餐厅位置
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-warning fw-bold" id="add-modal-btn-confirm" disabled>
+                    <i class="fas fa-check me-1"></i>确认位置
+                </button>
             </div>
         </div>
     </div>
@@ -165,4 +219,73 @@ h5 {
     padding-bottom: 8px;
 }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window._AMapSecurityConfig = { securityJsCode: '{{ amap_js_security_key }}' };
+</script>
+<script src="https://webapi.amap.com/maps?v=2.0&key={{ amap_js_key }}&plugin=AMap.Geolocation,AMap.AutoComplete,AMap.PlaceSearch,AMap.Geocoder"></script>
+<script src="{{ url_for('static', filename='js/amap_picker.js') }}"></script>
+<script>
+(function () {
+    let pickerInited = false;
+    let picker = null;
+    let pendingLat = null, pendingLng = null, pendingAddr = '';
+
+    const modal = document.getElementById('addMapModal');
+
+    // 打开弹窗
+    document.getElementById('btn-open-add-map').addEventListener('click', function () {
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+
+    // 弹窗展示后初始化地图（只初始化一次）
+    modal.addEventListener('shown.bs.modal', function () {
+        if (pickerInited) return;
+        pickerInited = true;
+        picker = new AmapPicker('add-modal-map-div', {
+            searchInputId: 'add-modal-search',
+            onSelect(lat, lng, address) {
+                pendingLat  = lat;
+                pendingLng  = lng;
+                pendingAddr = address;
+                document.getElementById('add-modal-addr-display').textContent =
+                    '已选：' + (address || lat.toFixed(5) + ', ' + lng.toFixed(5));
+                document.getElementById('add-modal-btn-confirm').disabled = false;
+            }
+        });
+        picker.init();
+
+        document.getElementById('add-modal-btn-locate').addEventListener('click', function () {
+            this.disabled = true;
+            picker.autoLocate(
+                () => { this.disabled = false; },
+                () => { this.disabled = false; }
+            );
+        });
+    });
+
+    // 确认位置 写入隐藏字段，关闭弹窗    document.getElementById('add-modal-btn-confirm').addEventListener('click', function () {
+        if (pendingLat === null) return;
+        document.getElementById('latitude').value  = pendingLat;
+        document.getElementById('longitude').value = pendingLng;
+        document.getElementById('add-coords-display').innerHTML =
+            '<i class="fas fa-check-circle text-success me-1"></i>' +
+            (pendingAddr || '') + ' (' + pendingLat.toFixed(5) + ', ' + pendingLng.toFixed(5) + ')';
+        const addrInput = document.getElementById('address');
+        if (!addrInput.value && pendingAddr) addrInput.value = pendingAddr;
+        bootstrap.Modal.getOrCreateInstance(modal).hide();
+    });
+
+    // 表单提交前校验坐标    document.querySelector('form').addEventListener('submit', function (e) {
+        if (!document.getElementById('latitude').value) {
+            e.preventDefault();
+            document.getElementById('add-modal-addr-display').innerHTML =
+                '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>请先在地图上选择餐厅位置</span>';
+            bootstrap.Modal.getOrCreateInstance(modal).show();
+        }
+    });
+})();
+</script>
 {% endblock %} 

@@ -7,6 +7,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(64), unique=True, nullable=False)
     password = db.Column(db.String(512), nullable=False) 
     role = db.Column(db.String(20), default='user')  # user/admin/merchant
+    location_confirmed = db.Column(db.Boolean, default=False)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
     avatar = db.Column(db.String(200), default='/static/images/default_avatar.png')
@@ -28,8 +29,10 @@ class Address(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(50), nullable=False)  # 收货人姓名
     phone = db.Column(db.String(20), nullable=False)
-    address = db.Column(db.String(200), nullable=False)  # 详细地址
+    address = db.Column(db.String(200), nullable=True)   # 详细地址（可选）
     is_default = db.Column(db.Boolean, default=False)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Restaurant(db.Model):
@@ -45,6 +48,8 @@ class Restaurant(db.Model):
     business_hours = db.Column(db.String(100))  # 营业时间
     delivery_fee = db.Column(db.Float, default=0)  # 配送费
     min_order = db.Column(db.Float, default=0)  # 起送价
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     rating = db.Column(db.Float, default=5.0)  # 评分
     review_count = db.Column(db.Integer, default=0)  # 评价数量
     status = db.Column(db.String(20), default='open')  # open/closed/busy/offline

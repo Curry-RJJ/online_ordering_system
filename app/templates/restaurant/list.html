@@ -36,6 +36,25 @@
     </div>
 </div>
 
+<!-- 位置栏 -->
+<div class="location-bar">
+    <div class="container">
+        <div class="location-bar-inner">
+            <i class="fas fa-map-marker-alt location-pin"></i>
+            <span class="location-text" id="location-text">
+                {% if has_location %}{{ user_address }}{% else %}未设置位置{% endif %}
+            </span>
+            {% if has_location %}
+            <span class="location-scope">· 10km 内</span>
+            {% endif %}
+            <button class="btn-switch-location" id="btn-switch-location"
+                    data-bs-toggle="modal" data-bs-target="#locationModal">
+                <i class="fas fa-exchange-alt me-1"></i>切换位置
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- 紧凑的搜索和筛选区域 -->
 <div class="compact-controls-section">
     <div class="container">
@@ -66,9 +85,16 @@
                        class="filter-btn {{ 'active' if sort_by == 'sales' else '' }}">
                         <i class="fas fa-fire me-1"></i>评价数
                     </a>
-                    <span class="filter-btn disabled" title="距离排序需要定位权限，暂未开放" style="opacity:0.45;cursor:not-allowed;">
+                    {% if has_location %}
+                    <a href="{{ url_for('restaurant.list_restaurants', sort='distance', keyword=keyword, category=current_category) }}"
+                       class="filter-btn {{ 'active' if sort_by == 'distance' else '' }}">
+                        <i class="fas fa-map-marker-alt me-1"></i>距离
+                    </a>
+                    {% else %}
+                    <span class="filter-btn disabled" title="请先设置位置" style="opacity:0.45;cursor:not-allowed;">
                         <i class="fas fa-map-marker-alt me-1"></i>距离
                     </span>
+                    {% endif %}
                 </div>
                 <div class="view-toggle">
                     <button class="view-btn active" data-view="list">
@@ -153,6 +179,13 @@
                     </div>
                     {% endif %}
                     
+                    <!-- 距离标签 -->
+                    {% if restaurant.distance is not none %}
+                    <div class="distance-badge">
+                        <i class="fas fa-route me-1"></i>{{ restaurant.distance }}km
+                    </div>
+                    {% endif %}
+
                     <!-- 快速操作 -->
                     <div class="quick-actions">
                         <button class="quick-btn" data-bs-toggle="tooltip" title="收藏">
@@ -889,11 +922,98 @@
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
 }
+
+/* 位置栏 */
+.location-bar {
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 8px 0;
+}
+.location-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+.location-pin { color: #ff8800; font-size: 14px; }
+.location-text { color: #1e293b; font-weight: 600; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.location-scope { color: #94a3b8; }
+.btn-switch-location {
+    margin-left: auto;
+    padding: 5px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #92400e;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-switch-location:hover {
+    background: #ffd900;
+    border-color: #ffd900;
+    color: #1e293b;
+}
+
+/* 距离标签 */
+.distance-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(6px);
+    z-index: 3;
+}
 </style>
+
+<!-- 切换位置弹窗 -->
+<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ffd900,#ff8800);">
+                <h5 class="modal-title fw-bold" id="locationModalLabel">
+                    <i class="fas fa-map-marker-alt me-2"></i>切换位置
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- 搜索框 + 自动定位 -->
+                <div class="d-flex gap-2 mb-2">
+                    <div class="input-group flex-1">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input id="modal-map-search" type="text" class="form-control"
+                               placeholder="搜索小区、写字楼、地标…" autocomplete="off">
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary" id="modal-btn-locate">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+                <!-- 地图 -->
+                <div id="modal-map-div" style="height:340px;border-radius:8px;border:1.5px solid #e2e8f0;overflow:hidden;"></div>
+                <!-- 选中地址 -->
+                <div id="modal-addr-display" class="mt-2 text-muted small">请在地图上点击或搜索选择位置</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-warning fw-bold" id="btn-confirm-location" disabled>
+                    <i class="fas fa-check me-1"></i>确认，刷新列表
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/amap_picker.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // 设置动画延迟
@@ -981,6 +1101,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// ── 切换位置弹窗逻辑 ──────────────────────────
+(function () {
+    let pickerInited = false;
+    let locationPicker = null;
+    let pendingLat = null, pendingLng = null, pendingAddr = '';
+
+    const modal = document.getElementById('locationModal');
+    if (!modal) return;
+
+    modal.addEventListener('shown.bs.modal', function () {
+        if (pickerInited) return;
+        pickerInited = true;
+
+        // 动态加载高德 JS API（只加载一次）
+        if (!window.AMap) {
+            window._AMapSecurityConfig = { securityJsCode: '{{ amap_js_security_key }}' };
+            const s = document.createElement('script');
+            s.src = 'https://webapi.amap.com/maps?v=2.0&key={{ amap_js_key }}&plugin=AMap.Geolocation,AMap.AutoComplete,AMap.PlaceSearch,AMap.Geocoder';
+            s.onload = initModalMap;
+            document.head.appendChild(s);
+        } else {
+            initModalMap();
+        }
+    });
+
+    function initModalMap() {
+        locationPicker = new AmapPicker('modal-map-div', {
+            searchInputId: 'modal-map-search',
+            onSelect(lat, lng, address) {
+                pendingLat  = lat;
+                pendingLng  = lng;
+                pendingAddr = address;
+                document.getElementById('modal-addr-display').textContent =
+                    '已选：' + (address || lat.toFixed(5) + ', ' + lng.toFixed(5));
+                document.getElementById('btn-confirm-location').disabled = false;
+            }
+        });
+        locationPicker.init();
+
+        document.getElementById('modal-btn-locate').addEventListener('click', function () {
+            this.disabled = true;
+            const self = this;
+            locationPicker.autoLocate(
+                () => { self.disabled = false; },
+                () => { self.disabled = false; }
+            );
+        });
+    }
+
+    document.getElementById('btn-confirm-location').addEventListener('click', function () {
+        if (pendingLat === null) return;
+        fetch('{{ url_for("restaurant.set_user_location") }}', {
+            method : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken' : document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ lat: pendingLat, lng: pendingLng, address: pendingAddr })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    });
+})();
 
 // 通知函数
 function showNotification(message, type) {

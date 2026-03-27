@@ -54,7 +54,7 @@ def api_login():
 
 
 @api_bp.route('/auth/register', methods=['POST'])
-@limiter.limit('5 per minute', error_message='注册请求过于频繁，请1分钟后重试')
+@limiter.limit('100 per minute', error_message='注册请求过于频繁，请1分钟后重试')
 def api_register():
     """
     用户注册

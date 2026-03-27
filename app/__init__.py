@@ -73,6 +73,11 @@ def create_app(config_name='default'):
             'pool_recycle': 3600,
         }
     
+    # 高德地图 API Key 配置
+    app.config['AMAP_JS_KEY'] = os.environ.get('AMAP_JS_KEY', '')
+    app.config['AMAP_JS_SECURITY_KEY'] = os.environ.get('AMAP_JS_SECURITY_KEY', '')
+    app.config['AMAP_WEB_KEY'] = os.environ.get('AMAP_WEB_KEY', '')
+
     # 文件上传配置
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
@@ -128,6 +133,7 @@ def create_app(config_name='default'):
     from app.routes.cart import cart_bp
     from app.routes.restaurant_category import restaurant_category_bp
     from app.routes.category import category_bp
+    from app.routes.location import location_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dish_bp)
@@ -136,6 +142,7 @@ def create_app(config_name='default'):
     app.register_blueprint(cart_bp)
     app.register_blueprint(restaurant_category_bp)
     app.register_blueprint(category_bp)
+    app.register_blueprint(location_bp)
 
     # 注册 RESTful API 蓝图（JWT 鉴权，排除 CSRF 检查）
     from app.api import api_bp
@@ -172,6 +179,10 @@ def create_app(config_name='default'):
             app.logger.error(f'Health check Cache error: {e}')
         http_code = 200 if status['status'] == 'ok' else 503
         return jsonify(status), http_code
+
+    # 将高德 JS Key 注入所有 Jinja2 模板（Web 服务 Key 不暴露给前端）
+    app.jinja_env.globals['amap_js_key'] = app.config['AMAP_JS_KEY']
+    app.jinja_env.globals['amap_js_security_key'] = app.config['AMAP_JS_SECURITY_KEY']
 
     from app.models import User
     @login_manager.user_loader

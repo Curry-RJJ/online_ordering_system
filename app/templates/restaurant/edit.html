@@ -41,6 +41,30 @@
                                    value="{{ restaurant.address }}" required>
                         </div>
 
+                        <!-- 位置选点（弹窗方式） -->
+                        <h5 class="mb-3 mt-4">
+                            <i class="fas fa-map-marker-alt me-2 text-warning"></i>餐厅位置
+                        </h5>
+                        <input type="hidden" id="latitude"  name="latitude"  value="{{ restaurant.latitude or '' }}">
+                        <input type="hidden" id="longitude" name="longitude" value="{{ restaurant.longitude or '' }}">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded"
+                             style="border:1.5px solid #e2e8f0;background:#f8fafc;">
+                            <i class="fas fa-map-pin fa-lg text-warning"></i>
+                            <span id="edit-coords-display" class="text-muted flex-grow-1 small">
+                                {% if restaurant.latitude and restaurant.longitude %}
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    当前坐标：{{ restaurant.latitude }}, {{ restaurant.longitude }}
+                                {% else %}
+                                    尚未设置坐标，请点击按钮选择位置
+                                {% endif %}
+                            </span>
+                            <button type="button" id="btn-open-edit-map"
+                                    class="btn btn-warning btn-sm fw-semibold">
+                                <i class="fas fa-map-marked-alt me-1"></i>
+                                {{ '重新选点' if restaurant.latitude else '在地图上选点' }}
+                            </button>
+                        </div>
+
                         <!-- 营业信息 -->
                         <h5 class="mb-3 mt-4">营业信息</h5>
                         <div class="row">
@@ -50,16 +74,16 @@
                                        value="{{ restaurant.business_hours }}">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="status" class="form-label">营业状态</label>
+                                <label for="status" class="form-label">营业状态/label>
                                 <select class="form-select" id="status" name="status">
-                                    <option value="open" {% if restaurant.status == 'open' %}selected{% endif %}>营业中</option>
-                                    <option value="closed" {% if restaurant.status == 'closed' %}selected{% endif %}>已关闭</option>
+                                    <option value="open" {% if restaurant.status == 'open' %}selected{% endif %}>营业中/option>
+                                    <option value="closed" {% if restaurant.status == 'closed' %}selected{% endif %}>已关闭/option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- 配送信息 -->
-                        <h5 class="mb-3 mt-4">配送信息</h5>
+                        <!-- 配送信息-->
+                        <h5 class="mb-3 mt-4">配送信息/h5>
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="min_order" class="form-label">起送金额（元）</label>
@@ -98,10 +122,10 @@
                                     <label for="logo_file" class="form-label">上传新Logo</label>
                                     <input type="file" class="form-control" id="logo_file" name="logo_file" 
                                            accept="image/*" onchange="previewImage(this, 'logo-preview')">
-                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸 200x200px</small>
+                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸200x200px</small>
                                 </div>
                                 
-                                <!-- 新图片预览 -->
+                                <!-- 新图片预览-->
                                 <div id="logo-preview" class="image-preview mb-2" style="display: none;">
                                     <img src="" alt="Logo预览" class="img-thumbnail" style="max-height: 100px;">
                                     <small class="text-success d-block">新Logo预览</small>
@@ -133,10 +157,10 @@
                                     <label for="banner_file" class="form-label">上传新横幅</label>
                                     <input type="file" class="form-control" id="banner_file" name="banner_file" 
                                            accept="image/*" onchange="previewImage(this, 'banner-preview')">
-                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸 800x300px</small>
+                                    <small class="text-muted">支持 JPG、PNG、GIF、WEBP 格式，建议尺寸800x300px</small>
                                 </div>
                                 
-                                <!-- 新图片预览 -->
+                                <!-- 新图片预览-->
                                 <div id="banner-preview" class="image-preview mb-2" style="display: none;">
                                     <img src="" alt="横幅预览" class="img-thumbnail" style="max-height: 100px; max-width: 100%;">
                                     <small class="text-success d-block">新横幅预览</small>
@@ -163,6 +187,46 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 餐厅位置选点弹窗 -->
+<div class="modal fade" id="editMapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#ffd900,#ff8800);">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-map-marker-alt me-2"></i>更新餐厅位置
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="d-flex gap-2 mb-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input id="edit-modal-search" type="text" class="form-control"
+                               placeholder="搜索新地址" autocomplete="off">
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary" id="edit-modal-btn-locate">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+                <div id="edit-modal-map-div"
+                     style="height:360px;border-radius:8px;border:1.5px solid #e2e8f0;overflow:hidden;"></div>
+                <div id="edit-modal-addr-display" class="mt-2 text-muted small">
+                    {% if restaurant.latitude and restaurant.longitude %}
+                        当前坐标：{{ restaurant.latitude }}, {{ restaurant.longitude }}（可重新选点）                    {% else %}
+                        请在地图上点击或拖动选择餐厅位置
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-warning fw-bold" id="edit-modal-btn-confirm" disabled>
+                    <i class="fas fa-check me-1"></i>确认位置
+                </button>
             </div>
         </div>
     </div>
@@ -200,6 +264,68 @@ h5 {
     background-color: #f8fff9;
 }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window._AMapSecurityConfig = { securityJsCode: '{{ amap_js_security_key }}' };
+</script>
+<script src="https://webapi.amap.com/maps?v=2.0&key={{ amap_js_key }}&plugin=AMap.Geolocation,AMap.AutoComplete,AMap.PlaceSearch,AMap.Geocoder"></script>
+<script src="{{ url_for('static', filename='js/amap_picker.js') }}"></script>
+<script>
+(function () {
+    let pickerInited = false;
+    let picker = null;
+    let pendingLat = null, pendingLng = null, pendingAddr = '';
+
+    const modal = document.getElementById('editMapModal');
+
+    // 打开弹窗
+    document.getElementById('btn-open-edit-map').addEventListener('click', function () {
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+
+    // 弹窗展示后初始化地图（只初始化一次）
+    modal.addEventListener('shown.bs.modal', function () {
+        if (pickerInited) return;
+        pickerInited = true;
+        const initLat = parseFloat('{{ restaurant.latitude or 22.6899 }}');
+        const initLng = parseFloat('{{ restaurant.longitude or 114.3490 }}');
+        picker = new AmapPicker('edit-modal-map-div', {
+            searchInputId: 'edit-modal-search',
+            defaultLat: initLat,
+            defaultLng: initLng,
+            onSelect(lat, lng, address) {
+                pendingLat  = lat;
+                pendingLng  = lng;
+                pendingAddr = address;
+                document.getElementById('edit-modal-addr-display').textContent =
+                    '已选：' + (address || lat.toFixed(5) + ', ' + lng.toFixed(5));
+                document.getElementById('edit-modal-btn-confirm').disabled = false;
+            }
+        });
+        picker.init();
+
+        document.getElementById('edit-modal-btn-locate').addEventListener('click', function () {
+            this.disabled = true;
+            picker.autoLocate(
+                () => { this.disabled = false; },
+                () => { this.disabled = false; }
+            );
+        });
+    });
+
+    // 确认位置  写入隐藏字段，关闭弹窗    document.getElementById('edit-modal-btn-confirm').addEventListener('click', function () {
+        if (pendingLat === null) return;
+        document.getElementById('latitude').value  = pendingLat;
+        document.getElementById('longitude').value = pendingLng;
+        document.getElementById('edit-coords-display').innerHTML =
+            '<i class="fas fa-check-circle text-success me-1"></i>' +
+            (pendingAddr || '') + ' (' + pendingLat.toFixed(5) + ', ' + pendingLng.toFixed(5) + ')';
+        bootstrap.Modal.getOrCreateInstance(modal).hide();
+    });
+})();
+</script>
 
 <script>
 function previewImage(input, previewId) {
@@ -220,25 +346,22 @@ function previewImage(input, previewId) {
     }
 }
 
-// 文件大小检查
-document.addEventListener('DOMContentLoaded', function() {
+// 文件大小检查document.addEventListener('DOMContentLoaded', function() {
     const fileInputs = document.querySelectorAll('input[type="file"]');
     
     fileInputs.forEach(function(input) {
         input.addEventListener('change', function() {
             const file = this.files[0];
             if (file) {
-                // 检查文件大小（5MB限制）
-                if (file.size > 5 * 1024 * 1024) {
+                // 检查文件大小（5MB限制）               if (file.size > 5 * 1024 * 1024) {
                     alert('文件大小不能超过5MB');
                     this.value = '';
                     return;
                 }
                 
-                // 检查文件类型
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                // 检查文件类型               const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
                 if (!allowedTypes.includes(file.type)) {
-                    alert('只支持 JPG、PNG、GIF、WEBP 格式的图片');
+                    alert('只支持JPG、PNG、GIF、WEBP 格式的图片');
                     this.value = '';
                     return;
                 }

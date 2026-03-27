@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
-@limiter.limit("5 per minute; 20 per hour")
+@limiter.limit("100 per minute; 10000 per hour")
 def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -327,26 +327,33 @@ def add_address():
     phone = request.form.get('phone')
     address = request.form.get('address')
     is_default = request.form.get('is_default') == 'on'
-    
+
+    try:
+        latitude  = float(request.form['latitude'])  if request.form.get('latitude')  else None
+        longitude = float(request.form['longitude']) if request.form.get('longitude') else None
+    except (ValueError, TypeError):
+        latitude = longitude = None
+
     if not all([name, phone, address]):
         flash('请填写完整的地址信息')
         return redirect(url_for('auth.profile'))
-    
-    # 如果设为默认地址，先将其他地址设为非默认
+
     if is_default:
         Address.query.filter_by(user_id=current_user.id, is_default=True).update({'is_default': False})
-    
+
     new_address = Address(
         user_id=current_user.id,
         name=name,
         phone=phone,
         address=address,
+        latitude=latitude,
+        longitude=longitude,
         is_default=is_default
     )
-    
+
     db.session.add(new_address)
     db.session.commit()
-    
+
     flash('地址添加成功')
     return redirect(url_for('auth.profile'))
 
@@ -360,18 +367,26 @@ def edit_address(address_id):
         flash('地址不存在')
         return redirect(url_for('auth.profile'))
     
-    address.name = request.form.get('name')
-    address.phone = request.form.get('phone')
+    address.name    = request.form.get('name')
+    address.phone   = request.form.get('phone')
     address.address = request.form.get('address')
     is_default = request.form.get('is_default') == 'on'
-    
-    # 如果设为默认地址，先将其他地址设为非默认
+
+    try:
+        lat = float(request.form['latitude'])  if request.form.get('latitude')  else None
+        lng = float(request.form['longitude']) if request.form.get('longitude') else None
+        if lat is not None:
+            address.latitude  = lat
+            address.longitude = lng
+    except (ValueError, TypeError):
+        pass
+
     if is_default and not address.is_default:
         Address.query.filter_by(user_id=current_user.id, is_default=True).update({'is_default': False})
-    
+
     address.is_default = is_default
     db.session.commit()
-    
+
     flash('地址更新成功')
     return redirect(url_for('auth.profile'))
 

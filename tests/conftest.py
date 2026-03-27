@@ -70,15 +70,19 @@ def client(app):
 # ──────────────────────────────────────────────
 
 def _seed():
+    # 测试用户全部设为已确认位置，避免 before_request 拦截干扰现有测试
     admin = User(username='admin',
                  password=generate_password_hash('admin123'),
-                 role='admin', email='admin@test.com', phone='13800138000')
+                 role='admin', email='admin@test.com', phone='13800138000',
+                 location_confirmed=True)
     user1 = User(username='testuser',
                  password=generate_password_hash('Test123456'),
-                 role='user', phone='13900139000')
+                 role='user', phone='13900139000',
+                 location_confirmed=True)
     user2 = User(username='otheruser',
                  password=generate_password_hash('Test123456'),
-                 role='user', phone='13911139000')
+                 role='user', phone='13911139000',
+                 location_confirmed=True)
     db.session.add_all([admin, user1, user2])
     db.session.flush()
 
@@ -92,7 +96,8 @@ def _seed():
     merchant = User(username='merchant',
                     password=generate_password_hash('Merchant123'),
                     role='merchant', phone='13922229000',
-                    restaurant_id=restaurant.id)
+                    restaurant_id=restaurant.id,
+                    location_confirmed=True)
     db.session.add(merchant)
     db.session.flush()
 

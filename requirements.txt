@@ -17,6 +17,8 @@ celery==5.3.4
 flask-limiter==3.5.0
 # ── CSRF 防护 ─────────────────────────────────
 Flask-WTF==1.2.1
+# ── HTTP 客户端（高德 Web Service API）──────────
+requests>=2.31.0
 # ── 测试依赖 ──────────────────────────────────
 pytest==7.4.3
 pytest-cov==4.1.0

@@ -74,6 +74,11 @@ services:
       # Redis配置（有密码时格式为 redis://:密码@redis:6379/0）
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
 
+      # 高德地图 API Key
+      AMAP_JS_KEY: ${AMAP_JS_KEY:-}
+      AMAP_JS_SECURITY_KEY: ${AMAP_JS_SECURITY_KEY:-}
+      AMAP_WEB_KEY: ${AMAP_WEB_KEY:-}
+
       TZ: Asia/Shanghai
     ports:
       - "${WEB_PORT:-5000}:5000"
@@ -105,6 +110,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-meituan_user}:${MYSQL_PASSWORD:-meituan_pass}@mysql:3306/${MYSQL_DATABASE:-meituan_waimai}?charset=utf8mb4
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AMAP_WEB_KEY: ${AMAP_WEB_KEY:-}
       TZ: Asia/Shanghai
     volumes:
       - ./logs:/app/logs
