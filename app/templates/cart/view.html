@@ -92,6 +92,7 @@
                             <h6><i class="fas fa-map-marker-alt me-2"></i>收货地址</h6>
                             {% if addresses %}
                                 <form id="checkout-form" method="POST" action="{{ url_for('cart.checkout') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="address-list">
                                         {% for address in addresses %}
                                         <div class="form-check address-item">

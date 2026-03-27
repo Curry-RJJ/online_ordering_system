@@ -74,10 +74,10 @@
                             {% for item in order.order_items %}
                             <div class="dish-item">
                                 <div class="dish-image-wrapper">
-                                    <img src="{{ item.dish.image or '/static/images/dishes/default.jpg' }}" 
-                                         alt="{{ item.dish.name }}" 
+                                    <img src="{{ item.dish.image or '/static/images/dishes/placeholder.png' }}"
+                                         alt="{{ item.dish.name }}"
                                          class="dish-image"
-                                         onerror="this.src='/static/images/dishes/default.jpg'">
+                                         onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
                                 </div>
                                 <div class="dish-details">
                                     <h6 class="dish-name">{{ item.dish.name }}</h6>
@@ -141,25 +141,39 @@
                                         <i class="fas fa-cog me-1"></i>状态管理
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        {% for status, label, icon in [
-                                            ('confirmed', '确认订单', 'check'),
-                                            ('preparing', '开始准备', 'utensils'),
-                                            ('delivering', '开始配送', 'shipping-fast'),
-                                            ('completed', '完成订单', 'check-double'),
-                                            ('cancelled', '取消订单', 'times')
-                                        ] %}
-                                            {% if status != order.status %}
+                                        {# 与后端状态机保持一致 #}
+                                        {% set valid_next = {
+                                            'pending':   ['confirmed', 'cancelled'],
+                                            'confirmed': ['preparing', 'cancelled'],
+                                            'preparing': ['delivering', 'cancelled'],
+                                            'delivering':['completed'],
+                                            'completed': [],
+                                            'cancelled': []
+                                        } %}
+                                        {% set all_status_meta = {
+                                            'confirmed': ('确认订单',  'check'),
+                                            'preparing': ('开始准备',  'utensils'),
+                                            'delivering':('开始配送',  'shipping-fast'),
+                                            'completed': ('完成订单',  'check-double'),
+                                            'cancelled': ('取消订单',  'times')
+                                        } %}
+                                        {% for next_s in valid_next.get(order.status, []) %}
+                                            {% set meta = all_status_meta.get(next_s) %}
+                                            {% if meta %}
                                             <li>
                                                 <form method="post" action="{{ url_for('order.update_status', order_id=order.id) }}" style="display:inline;">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <input type="hidden" name="status" value="{{ status }}">
-                                                    <button type="submit" class="dropdown-item">
-                                                        <i class="fas fa-{{ icon }} me-2"></i>{{ label }}
+                                                    <input type="hidden" name="status" value="{{ next_s }}">
+                                                    <button type="submit" class="dropdown-item {% if next_s == 'cancelled' %}text-danger{% endif %}">
+                                                        <i class="fas fa-{{ meta[1] }} me-2"></i>{{ meta[0] }}
                                                     </button>
                                                 </form>
                                             </li>
                                             {% endif %}
                                         {% endfor %}
+                                        {% if order.status in ['completed', 'cancelled'] %}
+                                        <li><span class="dropdown-item text-muted" style="cursor:default;">订单已终结，无可操作</span></li>
+                                        {% endif %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
                                             <form method="post" action="{{ url_for('order.admin_delete_order', order_id=order.id) }}"
@@ -272,7 +286,7 @@
 
 .order-card:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
+    border-color: #ffd900;
 }
 
 .order-card.order-cancelled {
@@ -527,17 +541,14 @@
 }
 
 .btn-outline-primary:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
 }
 
 .btn-outline-danger:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
 }
 
 .btn-warning:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
 }
 

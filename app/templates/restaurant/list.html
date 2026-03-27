@@ -159,9 +159,10 @@
             {% for restaurant in restaurants %}
             <div class="restaurant-card fade-in" data-delay="{{ loop.index0 * 0.1 }}">
                 <div class="restaurant-image-wrapper">
-                    <img src="{{ restaurant.logo or '/static/images/default_restaurant.jpg' }}" 
-                         alt="{{ restaurant.name }}" 
+                    <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                         alt="{{ restaurant.name }}"
                          class="restaurant-image"
+                         onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';"
                          loading="lazy">
                     
                     <!-- 状态徽章 -->
@@ -201,10 +202,13 @@
                     <div class="restaurant-header">
                         <h5 class="restaurant-name">{{ restaurant.name }}</h5>
                         <div class="restaurant-rating">
+                            {% if restaurant.review_count and restaurant.review_count > 0 %}
                             <div class="rating-stars">
                                 {% for i in range(5) %}
-                                    {% if i < restaurant.rating %}
+                                    {% if i < restaurant.rating|int %}
                                         <i class="fas fa-star"></i>
+                                    {% elif (restaurant.rating - i) >= 0.5 %}
+                                        <i class="fas fa-star-half-alt"></i>
                                     {% else %}
                                         <i class="far fa-star"></i>
                                     {% endif %}
@@ -212,6 +216,10 @@
                             </div>
                             <span class="rating-number">{{ restaurant.rating }}</span>
                             <span class="review-count">({{ restaurant.review_count }})</span>
+                            {% else %}
+                            <span class="text-muted" style="font-size:0.8rem;font-style:italic;">暂无评分</span>
+                            <span class="review-count">(0)</span>
+                            {% endif %}
                         </div>
                     </div>
                     

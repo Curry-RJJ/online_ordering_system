@@ -111,8 +111,8 @@
                                 <!-- 当前图片预览 -->
                                 {% if restaurant.logo %}
                                 <div class="current-image mb-2">
-                                    <img src="{{ restaurant.logo }}" alt="当前Logo" class="img-thumbnail" style="max-height: 100px;" 
-                                         onerror="this.src='/static/images/default_restaurant.jpg'; this.onerror=null;">
+                                    <img src="{{ restaurant.logo }}" alt="当前Logo" class="img-thumbnail" style="max-height: 100px;"
+                                         onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
                                     <small class="text-muted d-block">当前Logo: {{ restaurant.logo }}</small>
                                 </div>
                                 {% endif %}
@@ -147,7 +147,7 @@
                                 {% if restaurant.banner %}
                                 <div class="current-image mb-2">
                                     <img src="{{ restaurant.banner }}" alt="当前横幅" class="img-thumbnail" style="max-height: 100px; max-width: 100%;"
-                                         onerror="this.src='/static/images/default_restaurant.jpg'; this.onerror=null;">
+                                         onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
                                     <small class="text-muted d-block">当前横幅: {{ restaurant.banner }}</small>
                                 </div>
                                 {% endif %}

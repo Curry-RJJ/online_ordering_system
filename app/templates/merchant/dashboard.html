@@ -507,11 +507,9 @@
             <div class="restaurant-card-body">
                 <div class="row align-items-center">
                     <div class="col-md-2 text-center mb-3 mb-md-0">
-                        {% if restaurant.logo %}
-                            <img src="{{ restaurant.logo }}" class="restaurant-logo" alt="{{ restaurant.name }}">
-                        {% else %}
-                            <img src="/static/images/default_restaurant.jpg" class="restaurant-logo" alt="默认Logo">
-                        {% endif %}
+                        <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                             class="restaurant-logo" alt="{{ restaurant.name }}"
+                             onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
                     </div>
                     <div class="col-md-10">
                         <h3 class="restaurant-name">{{ restaurant.name }}</h3>

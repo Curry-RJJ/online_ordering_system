@@ -11,25 +11,33 @@
                 <div class="col-12">
                     <div class="restaurant-info-card">
                         <div class="restaurant-logo">
-                            <img src="{{ restaurant.logo or '/static/images/default_restaurant.jpg' }}" 
-                                 alt="{{ restaurant.name }}">
+                            <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                                 alt="{{ restaurant.name }}"
+                                 onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
                         </div>
                         <div class="restaurant-details">
                             <h1 class="restaurant-name">{{ restaurant.name }}</h1>
                             <p class="restaurant-desc">{{ restaurant.description }}</p>
                             <div class="restaurant-meta">
                                 <div class="rating-info">
+                                    {% if restaurant.review_count and restaurant.review_count > 0 %}
                                     <span class="rating-score">{{ restaurant.rating }}</span>
                                     <div class="stars">
                                         {% for i in range(5) %}
-                                            {% if i < restaurant.rating %}
+                                            {% if i < restaurant.rating|int %}
                                                 <i class="fas fa-star text-warning"></i>
+                                            {% elif (restaurant.rating - i) >= 0.5 %}
+                                                <i class="fas fa-star-half-alt text-warning"></i>
                                             {% else %}
                                                 <i class="far fa-star text-muted"></i>
                                             {% endif %}
                                         {% endfor %}
                                     </div>
                                     <span class="review-count">({{ restaurant.review_count }}条评价)</span>
+                                    {% else %}
+                                    <span class="text-muted" style="font-size:0.9rem;font-style:italic;">暂无评分</span>
+                                    <span class="review-count">(0条评价)</span>
+                                    {% endif %}
                                 </div>
                                 <div class="delivery-info">
                                     {% if restaurant.delivery_fee == 0 %}
@@ -97,8 +105,9 @@
                             {% for dish in recommended_dishes %}
                             <div class="dish-card recommended">
                                 <div class="dish-image">
-                                    <img src="{{ dish.image or '/static/images/dishes/default.jpg' }}" 
-                                         alt="{{ dish.name }}">
+                                    <img src="{{ dish.image or '/static/images/dishes/placeholder.png' }}" 
+                                         alt="{{ dish.name }}"
+                                         onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
                                     {% if dish.is_spicy %}
                                     <span class="spicy-badge">🌶️</span>
                                     {% endif %}
@@ -140,8 +149,9 @@
                             {% for dish in dishes %}
                             <div class="dish-item">
                                 <div class="dish-image">
-                                    <img src="{{ dish.image or '/static/images/dishes/default.jpg' }}" 
-                                         alt="{{ dish.name }}">
+                                    <img src="{{ dish.image or '/static/images/dishes/placeholder.png' }}" 
+                                         alt="{{ dish.name }}"
+                                         onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
                                     {% if dish.is_spicy %}
                                     <span class="spicy-badge">🌶️</span>
                                     {% endif %}
