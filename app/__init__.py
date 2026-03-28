@@ -35,6 +35,7 @@ def create_app(config_name='default'):
     
     # 直接配置基本设置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-please-change-in-production'
+    app.config['WTF_CSRF_TIME_LIMIT'] = None  # 不限制 CSRF token 过期时间
 
     # JWT 配置
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or app.config['SECRET_KEY']
