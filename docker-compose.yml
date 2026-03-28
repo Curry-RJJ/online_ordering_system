@@ -89,6 +89,12 @@ services:
       - ./instance:/app/instance
       # 持久化日志
       - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     depends_on:
       mysql:
         condition: service_healthy
@@ -159,7 +165,8 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot:ro
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     networks:
       - app_network
 
