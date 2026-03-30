@@ -347,7 +347,13 @@
                                class="form-control" 
                                name="password" 
                                placeholder="输入密码" 
-                               required>
+                               required
+                               minlength="8"
+                               autocomplete="new-password"
+                               aria-describedby="password-hint">
+                        <small id="password-hint" class="form-text text-muted d-block mt-1" style="font-size:12px;line-height:1.4;">
+                            至少 8 位，须含英文字母与数字，可含符号或空格；勿使用过于简单的常见密码。
+                        </small>
                     </div>
                     
                     <div class="form-group">
@@ -356,7 +362,9 @@
                                class="form-control" 
                                name="confirm_password" 
                                placeholder="再次输入密码" 
-                               required>
+                               required
+                               minlength="8"
+                               autocomplete="new-password">
                     </div>
                     
                     <button type="submit" class="btn-submit">注册</button>

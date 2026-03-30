@@ -1,31 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MySQL数据初始化脚本 - 用于Docker容器启动时
+MySQL 侧不再通过本文件插入业务用户数据（历史遗留占位）。
+
+管理员与演示用户由 **web 容器 entrypoint** 在首次空库时创建，密码与账号来自环境变量
+`INITIAL_ADMIN_*` / `SEED_DEMO_USERS`，见 `app/bootstrap_admin.py` 与 `entrypoint.sh`。
+
+若需本地用 MySQL 全量灌库，请配置 `DATABASE_URL` 后运行：
+`python database/init_data.py`（会 drop 并重建表）。
 """
-
-from werkzeug.security import generate_password_hash
-
-# 创建管理员用户
-admin = User(
-    username='admin',
-    password=generate_password_hash('admin123'),
-    role='admin',
-    phone='13800138000',
-    email='admin@meituan.com'
-)
-db.session.add(admin)
-
-# 创建测试用户
-test_user = User(
-    username='testuser',
-    password=generate_password_hash('123456'),
-    role='user',
-    phone='13900139000',
-    email='test@user.com'
-)
-db.session.add(test_user)
-
-db.session.commit()
-print("✓ 管理员账号创建完成: admin / admin123")
-print("✓ 测试用户创建完成: testuser / 123456")

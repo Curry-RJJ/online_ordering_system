@@ -40,42 +40,49 @@ class TestRegisterSchema:
 
     def test_valid_register(self):
         errors = RegisterSchema().validate({
-            'username': 'newuser', 'password': 'Test123456'
+            'username': 'newuser', 'password': 'BrandNew123'
         })
         assert errors == {}
 
     def test_username_too_short(self):
         """用户名少于3字符应失败"""
-        errors = RegisterSchema().validate({'username': 'ab', 'password': 'Test123456'})
+        errors = RegisterSchema().validate({'username': 'ab', 'password': 'BrandNew123'})
         assert 'username' in errors
 
     def test_username_too_long(self):
         errors = RegisterSchema().validate({
-            'username': 'a' * 33, 'password': 'Test123456'
+            'username': 'a' * 33, 'password': 'BrandNew123'
         })
         assert 'username' in errors
 
     def test_password_too_short(self):
-        """密码少于6字符应失败"""
+        """密码少于8字符应失败"""
         errors = RegisterSchema().validate({'username': 'newuser', 'password': '123'})
+        assert 'password' in errors
+
+    def test_password_weak_zxcvbn(self):
+        """常见弱密码应被 zxcvbn 拒绝"""
+        errors = RegisterSchema().validate({
+            'username': 'newuser', 'password': 'Test123456'
+        })
         assert 'password' in errors
 
     def test_invalid_phone(self):
         """手机号格式不正确应失败"""
         errors = RegisterSchema().validate({
-            'username': 'newuser', 'password': 'Test123456', 'phone': '12345'
+            'username': 'newuser', 'password': 'BrandNew123', 'phone': '12345'
         })
         assert 'phone' in errors
 
     def test_valid_phone(self):
         errors = RegisterSchema().validate({
-            'username': 'newuser', 'password': 'Test123456', 'phone': '13900139000'
+            'username': 'newuser', 'password': 'BrandNew123', 'phone': '13900139000'
         })
         assert errors == {}
 
     def test_phone_is_optional(self):
         """手机号是可选字段"""
-        errors = RegisterSchema().validate({'username': 'newuser', 'password': 'Test123456'})
+        errors = RegisterSchema().validate({'username': 'newuser', 'password': 'BrandNew123'})
         assert 'phone' not in errors
 
 

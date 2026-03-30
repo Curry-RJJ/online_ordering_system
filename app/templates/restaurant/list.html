@@ -291,9 +291,10 @@
 </div>
 
 
-<!-- 首次访问位置授权弹窗 -->
+<!-- 首次访问位置授权弹窗（data-show-auth-on-load 供脚本读取，避免在 <script> 内写 Jinja 控制流） -->
 <div class="modal fade" id="locationAuthModal" tabindex="-1" aria-hidden="true"
-     data-bs-backdrop="static" data-bs-keyboard="false">
+     data-bs-backdrop="static" data-bs-keyboard="false"
+     data-show-auth-on-load="{{ '1' if current_user.is_authenticated and not current_user.location_confirmed else '0' }}">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content" style="border-radius:20px;overflow:hidden;border:none;
              box-shadow:0 20px 60px rgba(0,0,0,0.22);">
@@ -523,11 +524,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })();
 
-// ── 首次位置授权弹窗 ──────────────────────────────────────────────────────
+// ── 首次位置授权弹窗（是否展示由 #locationAuthModal 的 data-show-auth-on-load 决定） ──
 (function () {
-    {% if current_user.is_authenticated and not current_user.location_confirmed %}
     const authEl = document.getElementById('locationAuthModal');
-    if (!authEl) return;
+    if (!authEl || authEl.dataset.showAuthOnLoad !== '1') return;
     const authModal = bootstrap.Modal.getOrCreateInstance(authEl);
     authModal.show();
 
@@ -559,7 +559,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(() => { window.location.reload(); })
         .catch(() => { window.location.reload(); });
     });
-    {% endif %}
 })();
 
 // 通知函数

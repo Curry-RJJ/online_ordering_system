@@ -15,16 +15,16 @@ class TestRegisterRoute:
     def test_post_register_success(self, client):
         rv = client.post('/auth/register', data={
             'username': 'newuser',
-            'password': 'NewPass123',
-            'confirm_password': 'NewPass123',
+            'password': 'BrandNew123',
+            'confirm_password': 'BrandNew123',
         }, follow_redirects=True)
         assert rv.status_code == 200
 
     def test_post_register_redirects_to_login(self, client):
         rv = client.post('/auth/register', data={
             'username': 'newuser2',
-            'password': 'NewPass123',
-            'confirm_password': 'NewPass123',
+            'password': 'BrandNew123',
+            'confirm_password': 'BrandNew123',
         })
         assert rv.status_code == 302
         assert '/auth/login' in rv.headers['Location']
@@ -38,13 +38,14 @@ class TestRegisterRoute:
         assert rv.status_code == 200
 
     def test_post_register_creates_user_in_db(self, app, client):
+        # 用户名勿与密码 BrandNew123 过于相似，否则 zxcvbn user_inputs 会降分至 <2
         client.post('/auth/register', data={
-            'username': 'brandnew',
+            'username': 'createsuser01',
             'password': 'BrandNew123',
             'confirm_password': 'BrandNew123',
         })
         with app.app_context():
-            user = User.query.filter_by(username='brandnew').first()
+            user = User.query.filter_by(username='createsuser01').first()
             assert user is not None
 
 
@@ -130,7 +131,7 @@ class TestProfileRoute:
             'email': '',
             'phone': '',
             'old_password': 'wrongold',
-            'new_password': 'NewPass123',
+            'new_password': 'BrandNew123',
         }, follow_redirects=True)
         assert rv.status_code == 200
 
@@ -140,7 +141,7 @@ class TestProfileRoute:
             'email': '',
             'phone': '',
             'old_password': 'Test123456',
-            'new_password': 'NewPass123',
+            'new_password': 'BrandNew123',
         }, follow_redirects=True)
         assert rv.status_code == 200
 

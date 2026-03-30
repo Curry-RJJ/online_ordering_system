@@ -83,6 +83,11 @@ def create_app(config_name='default'):
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
     app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+    # 密码强度：zxcvbn 分数阈值 0～4，默认 2（可通过环境变量 PASSWORD_ZXCVBN_MIN_SCORE 覆盖）
+    app.config['PASSWORD_ZXCVBN_MIN_SCORE'] = int(
+        os.environ.get('PASSWORD_ZXCVBN_MIN_SCORE', '2')
+    )
     
     # 确保上传目录存在
     os.makedirs(os.path.join(basedir, 'static', 'images', 'dishes'), exist_ok=True)

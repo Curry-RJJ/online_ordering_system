@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User, AdminApplication, MerchantApplication, Address, Restaurant, Order, Review
 from app import db, limiter
+from app.password_policy import validate_password
 from sqlalchemy.exc import IntegrityError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -29,6 +30,11 @@ def register():
         # BUG-07 修复：邮箱唯一性校验
         if email and User.query.filter_by(email=email).first():
             flash('该邮箱已被注册')
+            return redirect(url_for('auth.register'))
+
+        ok, pw_msg = validate_password(password, username=username, email=email)
+        if not ok:
+            flash(pw_msg)
             return redirect(url_for('auth.register'))
 
         try:
@@ -98,6 +104,14 @@ def profile():
         if new_password:
             if not old_password or not check_password_hash(current_user.password, old_password):
                 flash('原密码错误')
+                return redirect(url_for('auth.profile'))
+            ok, pw_msg = validate_password(
+                new_password,
+                username=username,
+                email=email or current_user.email,
+            )
+            if not ok:
+                flash(pw_msg)
                 return redirect(url_for('auth.profile'))
             current_user.password = generate_password_hash(new_password)
         

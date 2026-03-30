@@ -96,9 +96,9 @@ python run_meituan.py mysql
 
 打开浏览器访问：http://localhost:5000
 
-**默认账号**：
-- 管理员：`admin` / `admin123`
-- 测试用户：`testuser` / `123456`
+**默认账号**（随 `database/init_data.py` 或 Docker 首次空库初始化；生产请用 `.env` 配置 `INITIAL_ADMIN_*`）：
+- 管理员：用户名默认 `admin`；密码在 **生产环境** 须设置 `INITIAL_ADMIN_PASSWORD`；**开发环境**未设置时默认为 `BrandNew123`（须满足密码策略）
+- 测试用户：`testuser` / `Test123456`（仅开发或 `SEED_DEMO_USERS=1` 时创建）
 
 ## 📱 功能演示
 

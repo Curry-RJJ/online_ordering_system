@@ -8,7 +8,9 @@ API 输入校验 Schema
         return bad_request("请求参数错误", data=errors)
 """
 import re
-from marshmallow import Schema, fields, validate, validates, ValidationError
+from marshmallow import Schema, fields, validate, validates_schema, ValidationError
+
+from app.password_policy import validate_password
 
 
 # ──────────────────────────────────────────────
@@ -46,8 +48,8 @@ class RegisterSchema(Schema):
     )
     password = fields.Str(
         required=True,
-        validate=validate.Length(min=6, max=128,
-                                 error='密码长度在6到128个字符之间'),
+        validate=validate.Length(min=8, max=128,
+                                 error='密码长度在8到128个字符之间'),
         error_messages={'required': '密码不能为空'}
     )
     phone = fields.Str(
@@ -58,6 +60,19 @@ class RegisterSchema(Schema):
         load_default='',
         error_messages={'validator_failed': '邮箱格式不正确'}
     )
+
+    @validates_schema
+    def validate_password_strength(self, data, **kwargs):
+        pwd = data.get('password')
+        if pwd is None:
+            return
+        username = (data.get('username') or '').strip()
+        email = data.get('email')
+        if isinstance(email, str):
+            email = email.strip() or None
+        ok, msg = validate_password(pwd, username=username or None, email=email)
+        if not ok:
+            raise ValidationError({'password': [msg]})
 
 
 # ──────────────────────────────────────────────

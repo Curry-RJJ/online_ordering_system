@@ -61,7 +61,11 @@
                             <div class="col-md-6 mb-3">
                                 <label for="new_password" class="form-label">新密码</label>
                                 <input type="password" class="form-control" id="new_password" name="new_password"
-                                       placeholder="留空表示不修改">
+                                       placeholder="留空表示不修改"
+                                       minlength="8"
+                                       autocomplete="new-password"
+                                       aria-describedby="new-password-hint">
+                                <small id="new-password-hint" class="form-text text-muted">至少 8 位，含字母与数字；可含符号或空格，勿过于简单。</small>
                             </div>
                         </div>
                         

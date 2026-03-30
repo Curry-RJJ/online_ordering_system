@@ -16,19 +16,19 @@ class TestRegister:
 
     def test_tc_auth_01_register_success(self, client):
         resp = client.post('/api/v1/auth/register', json={
-            'username': 'newuser', 'password': 'Test123456'
+            'username': 'apiuser_tc01', 'password': 'BrandNew123'
         })
         assert resp.status_code == 201
         data = resp.get_json()
         assert data['code'] == 201
         assert 'access_token' in data['data']
-        assert data['data']['user']['username'] == 'newuser'
+        assert data['data']['user']['username'] == 'apiuser_tc01'
 
     """TC-AUTH-02: 重复用户名注册失败"""
 
     def test_tc_auth_02_register_duplicate_username(self, client):
         resp = client.post('/api/v1/auth/register', json={
-            'username': 'admin', 'password': 'Test123456'
+            'username': 'admin', 'password': 'BrandNew123'
         })
         assert resp.status_code == 400
         data = resp.get_json()
@@ -40,13 +40,13 @@ class TestRegister:
 
     def test_register_username_too_short(self, client):
         resp = client.post('/api/v1/auth/register', json={
-            'username': 'ab', 'password': 'Test123456'
+            'username': 'ab', 'password': 'BrandNew123'
         })
         assert resp.status_code == 400
 
     def test_register_returns_token_pair(self, client):
         resp = client.post('/api/v1/auth/register', json={
-            'username': 'brandnewuser', 'password': 'MyPass123'
+            'username': 'brandnewuser', 'password': 'BrandNew123'
         })
         data = resp.get_json()
         assert 'access_token' in data['data']

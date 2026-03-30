@@ -13,6 +13,7 @@ alwaysApply: false
 - **Task queue**: Celery (`celery_worker.py`, tasks in `app/tasks/`)
 - **CSRF**: Flask-WTF (API blueprint exempted)
 - **Deploy**: Docker Compose + Nginx + Gunicorn
+- **Password policy**: `zxcvbn`（`app/password_policy.py`）；长度 8–128，至少 1 个英文字母与 1 个数字，可含符号/空格；最低 zxcvbn 分数默认 2，环境变量 `PASSWORD_ZXCVBN_MIN_SCORE`（0–4）可覆盖
 
 ## Directory Structure
 ```
@@ -20,6 +21,8 @@ app/
 ├── __init__.py        # create_app() factory, registers all extensions & blueprints
 ├── models.py          # All SQLAlchemy models
 ├── errors.py          # Custom exceptions
+├── password_policy.py # 注册/改密密钥强度（规则 + zxcvbn）
+├── bootstrap_admin.py # 首次空库管理员凭据（环境变量 INITIAL_ADMIN_*）
 ├── utils.py           # Helpers (image upload, etc.)
 ├── api/               # REST API blueprint (JWT auth, prefix /api)
 │   ├── auth.py        # /api/auth/*
@@ -63,6 +66,8 @@ migrations/            # Flask-Migrate files
 - **Image upload**: saved to `app/static/images/{dishes|logos|banners}/`, return relative path
 - **Roles**: `user` / `merchant` (restaurant admin) / `admin` (superadmin)
 - **Blueprint prefix**: Jinja2 pages — none; REST API — `/api`
+- **Password (register / change)**: 服务端 `validate_password()`；登录不重新校验 zxcvbn
+- **Bootstrap admin**: 首次空库由 `entrypoint`/`init_data` 使用 `get_initial_admin_credentials()`；生产须设置 `INITIAL_ADMIN_PASSWORD`；演示用户 `testuser` 仅 `SEED_DEMO_USERS=1` 或 `FLASK_ENV=development`
 
 ## Server
 - **IP**: 43.155.34.32 | **Domain**: `beautyteam.sztu1881.com`（HTTPS 已上线，证书有效期至 2026-06-24）

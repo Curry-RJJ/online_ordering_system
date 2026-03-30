@@ -18,51 +18,62 @@ sleep 5
 
 # 初始化数据库
 echo "初始化数据库..."
-python << END
+python << 'END'
 from app import create_app, db
-from app.models import User, Restaurant, Dish, Category, RestaurantCategory, Order, OrderItem
+from app.models import User
+from app.bootstrap_admin import get_initial_admin_credentials
+from werkzeug.security import generate_password_hash
 import os
 
 app = create_app()
 with app.app_context():
-    # 创建所有表
     db.create_all()
     print("数据库表创建成功！")
-    
-    # 检查是否需要初始化数据
+
     if User.query.count() == 0:
-        print("开始初始化测试数据...")
+        print("开始初始化数据...")
         try:
-            from werkzeug.security import generate_password_hash
-            
-            # 创建管理员用户
+            cred = get_initial_admin_credentials()
             admin = User(
-                username='admin',
-                password=generate_password_hash('admin123'),
+                username=cred['username'],
+                password=generate_password_hash(cred['password']),
                 role='admin',
-                phone='13800138000',
-                email='admin@meituan.com'
+                phone=cred['phone'],
+                email=cred['email'],
+                location_confirmed=True,
             )
             db.session.add(admin)
-            
-            # 创建测试用户
-            test_user = User(
-                username='testuser',
-                password=generate_password_hash('123456'),
-                role='user',
-                phone='13900139000',
-                email='test@user.com'
+
+            flask_env = os.environ.get('FLASK_ENV', 'production')
+            seed_demo = (
+                os.environ.get('SEED_DEMO_USERS', '').lower() in ('1', 'true', 'yes')
+                or flask_env == 'development'
             )
-            db.session.add(test_user)
-            
+            if seed_demo:
+                test_user = User(
+                    username='testuser',
+                    password=generate_password_hash('Test123456'),
+                    role='user',
+                    phone='13900139000',
+                    email='test@user.com',
+                    location_confirmed=True,
+                )
+                db.session.add(test_user)
+
             db.session.commit()
-            print("测试数据初始化成功！")
-            print("管理员账号: admin / admin123")
-            print("测试用户: testuser / 123456")
+            print("数据初始化成功！")
+            print("管理员用户名: %s" % cred['username'])
+            if os.environ.get('INITIAL_ADMIN_PASSWORD', '').strip():
+                print("管理员密码: 已使用环境变量 INITIAL_ADMIN_PASSWORD（请勿在日志中泄露）。")
+            elif flask_env == 'development':
+                print("管理员密码: 开发环境未设置 INITIAL_ADMIN_PASSWORD，已使用默认 BrandNew123（请尽快登录并修改）。")
+            if seed_demo:
+                print("已创建演示用户 testuser / Test123456。")
         except Exception as e:
             print(f"初始化数据时出错: {e}")
             import traceback
             traceback.print_exc()
+            raise
     else:
         print("数据库已有数据，跳过初始化。")
 END

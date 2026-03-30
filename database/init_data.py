@@ -15,35 +15,42 @@ from werkzeug.security import generate_password_hash
 
 def init_database():
     """初始化数据库和基础数据"""
+    import os
+    # 本地执行 init_data 时默认按开发处理；生产请设置 FLASK_ENV 与 INITIAL_ADMIN_PASSWORD
+    os.environ.setdefault('FLASK_ENV', 'development')
+
+    from app.bootstrap_admin import get_initial_admin_credentials
+
     app = create_app()
-    
+
     with app.app_context():
         # 删除所有表并重新创建
         db.drop_all()
         db.create_all()
-        
+
         print("🗄️ 数据库表创建完成")
-        
-        # 创建管理员用户
+
+        cred = get_initial_admin_credentials()
         admin = User(
-            username='admin',
-            password=generate_password_hash('admin123'),
+            username=cred['username'],
+            password=generate_password_hash(cred['password']),
             role='admin',
-            phone='13800138000',
-            email='admin@meituan.com'
+            phone=cred['phone'],
+            email=cred['email'],
+            location_confirmed=True,
         )
         db.session.add(admin)
-        
-        # 创建测试用户
+
         test_user = User(
             username='testuser',
-            password=generate_password_hash('123456'),
+            password=generate_password_hash('Test123456'),
             role='user',
             phone='13900139000',
-            email='test@user.com'
+            email='test@user.com',
+            location_confirmed=True,
         )
         db.session.add(test_user)
-        
+
         db.session.commit()
         print("👤 用户创建完成")
         
@@ -484,8 +491,8 @@ def init_database():
         print(f"   地址数量: {Address.query.count()}")
         
         print("\n🔑 登录信息:")
-        print("   管理员账号: admin / admin123")
-        print("   测试用户: testuser / 123456")
+        print("   管理员: %s（密码见环境变量 INITIAL_ADMIN_PASSWORD；开发未设置时为 BrandNew123）" % cred['username'])
+        print("   测试用户: testuser / Test123456")
         
         print("\n🏪 餐厅列表:")
         for restaurant in Restaurant.query.all():
