@@ -72,7 +72,9 @@ migrations/            # Flask-Migrate files
 ## Server
 - **IP**: 43.155.34.32 | **Domain**: `beautyteam.sztu1881.com`（HTTPS 已上线，证书有效期至 2026-06-24）
 - **SSH**: `ssh root@43.155.34.32` (key-based, no password)
+- **服务器代码路径**: `/opt/online_ordering_system`（`docker-compose.yml` 与 `.env` 所在目录）
 - **Deploy guide**: `docs/落地部署清单.md`
+- **Performance**: `docs/性能优化方案.md`
 
 ## Notes
 - After model changes: `flask db migrate && flask db upgrade`
