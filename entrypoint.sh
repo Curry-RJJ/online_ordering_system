@@ -85,6 +85,7 @@ if [ "$FLASK_ENV" = "development" ]; then
     python run.py
 else
     echo "以生产模式启动（使用Gunicorn）..."
-    gunicorn --bind 0.0.0.0:5000 --workers 4 --threads 2 --timeout 120 --access-logfile logs/access.log --error-logfile logs/error.log run:app
+    # 2C2G：workers 过多易导致内存争用；以 2 workers × 4 threads 为基线，压测后再调（性能优化方案 P0）
+    gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 120 --access-logfile logs/access.log --error-logfile logs/error.log run:app
 fi
 
