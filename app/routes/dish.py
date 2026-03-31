@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Dish, Restaurant, Category, RestaurantChangeRequest, OrderItem
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
 from app import db
+from sqlalchemy.orm import joinedload
 import json
 
 dish_bp = Blueprint('dish', __name__, url_prefix='/dish')
@@ -310,9 +311,12 @@ def admin_dishes():
     restaurant_id = request.args.get('restaurant_id', type=int)
     available = request.args.get('available', '')
     
-    # 构建查询
-    query = Dish.query
-    
+    # 构建查询（预加载餐厅与分类，避免管理列表模板 N+1）
+    query = Dish.query.options(
+        joinedload(Dish.restaurant),
+        joinedload(Dish.category),
+    )
+
     if keyword:
         query = query.filter(Dish.name.contains(keyword))
     

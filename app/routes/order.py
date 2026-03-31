@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Order, Dish, Restaurant, OrderItem, Review
 from app import db
 from datetime import datetime
+from sqlalchemy.orm import selectinload, joinedload
 try:
     from app.tasks.order_tasks import notify_order_status_change as _notify_status
     _CELERY_ENABLED = True
@@ -10,6 +11,14 @@ except Exception:
     _CELERY_ENABLED = False
 
 order_bp = Blueprint('order', __name__, url_prefix='/order')
+
+
+def _orders_list_query():
+    """列表/商家管理：预加载餐厅、订单行与菜品，避免模板 N+1"""
+    return Order.query.options(
+        selectinload(Order.order_items).joinedload(OrderItem.dish),
+        joinedload(Order.restaurant),
+    )
 
 @order_bp.route('/create/<int:dish_id>', methods=['GET', 'POST'])
 @login_required
@@ -22,15 +31,13 @@ def create_order(dish_id):
 @order_bp.route('/')
 @login_required
 def list_orders():
+    q = _orders_list_query()
     if current_user.role == 'admin':
-        # 管理员查看所有订单
-        orders = Order.query.order_by(Order.created_at.desc()).all()
+        orders = q.order_by(Order.created_at.desc()).all()
     elif current_user.role == 'merchant' and current_user.restaurant_id:
-        # 商家管理员查看自己餐厅的订单
-        orders = Order.query.filter_by(restaurant_id=current_user.restaurant_id).order_by(Order.created_at.desc()).all()
+        orders = q.filter_by(restaurant_id=current_user.restaurant_id).order_by(Order.created_at.desc()).all()
     else:
-        # 普通用户查看自己的订单
-        orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
+        orders = q.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
 
     return render_template('order/list.html', orders=orders)
 
@@ -136,7 +143,7 @@ def cancel_order(order_id):
 @order_bp.route('/update_status/<int:order_id>', methods=['POST'])
 @login_required
 def update_status(order_id):
-    order = Order.query.get_or_404(order_id)
+    order = Order.query.options(joinedload(Order.user)).get_or_404(order_id)
     
     # 权限检查：管理员或该订单所属餐厅的商家管理员
     if current_user.role == 'admin':
@@ -194,7 +201,11 @@ def update_status(order_id):
 @order_bp.route('/detail/<int:order_id>')
 @login_required
 def order_detail(order_id):
-    order = Order.query.get_or_404(order_id)
+    order = Order.query.options(
+        selectinload(Order.order_items).joinedload(OrderItem.dish),
+        joinedload(Order.restaurant),
+        joinedload(Order.user),
+    ).get_or_404(order_id)
     
     # 权限检查：订单所属用户、管理员或该订单所属餐厅的商家管理员
     if current_user.role == 'admin':
@@ -230,9 +241,9 @@ def merchant_manage_orders():
     status_filter = request.args.get('status', 'all')
     
     if status_filter == 'all':
-        orders = Order.query.filter_by(restaurant_id=restaurant.id).order_by(Order.created_at.desc()).all()
+        orders = _orders_list_query().filter_by(restaurant_id=restaurant.id).order_by(Order.created_at.desc()).all()
     else:
-        orders = Order.query.filter_by(restaurant_id=restaurant.id, status=status_filter).order_by(Order.created_at.desc()).all()
+        orders = _orders_list_query().filter_by(restaurant_id=restaurant.id, status=status_filter).order_by(Order.created_at.desc()).all()
     
     # 统计数据
     total_orders = Order.query.filter_by(restaurant_id=restaurant.id).count()

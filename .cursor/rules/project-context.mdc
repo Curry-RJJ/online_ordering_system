@@ -41,7 +41,7 @@ app/
 ├── services/cart_service.py  # Cart business logic
 ├── tasks/order_tasks.py      # Celery async tasks
 ├── templates/         # Jinja2 templates (sub-dirs by feature)
-└── static/            # CSS, images
+└── static/            # CSS, images；`static/dist/` 可选放置带内容 hash 的构建产物（Nginx 对 `/static/dist/` 长缓存）
 tests/                 # pytest (fixtures in conftest.py)
 migrations/            # Flask-Migrate files
 ```
@@ -77,6 +77,6 @@ migrations/            # Flask-Migrate files
 - **Performance**: `docs/性能优化方案.md`
 
 ## Notes
-- After model changes: `flask db migrate && flask db upgrade`
+- After model changes: `flask db migrate && flask db upgrade`；性能相关索引见 `migrations/versions/b2c4e6a8d0f1_add_order_list_composite_indexes.py`
 - New API routes: register blueprint in `app/api/__init__.py`
 - Tests: `pytest` in `tests/`

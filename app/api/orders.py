@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_limiter.util import get_remote_address
 from app.models import Order, OrderItem, Address, Dish, Restaurant
 from app import db, limiter
+from sqlalchemy.orm import selectinload
 from app.services import cart_service
 from app.routes.cart import _create_orders, generate_order_no
 from app.api import api_bp
@@ -40,7 +41,7 @@ def _order_dict(order: Order, include_items: bool = False) -> dict:
                 'quantity': item.quantity,
                 'subtotal': item.subtotal,
             }
-            for item in order.order_items.all()
+            for item in order.order_items
         ]
     return result
 
@@ -82,7 +83,9 @@ def api_list_orders():
 def api_get_order(order_id):
     """获取订单详情（含订单项）"""
     user_id = int(get_jwt_identity())
-    order = Order.query.get(order_id)
+    order = Order.query.options(
+        selectinload(Order.order_items).joinedload(OrderItem.dish),
+    ).get(order_id)
 
     if not order:
         return not_found('订单不存在')

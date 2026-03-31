@@ -146,8 +146,8 @@ class Order(db.Model):
     # 备注
     remark = db.Column(db.Text)
     
-    # 订单项
-    order_items = db.relationship('OrderItem', backref='order', lazy='dynamic', cascade='all, delete-orphan')
+    # 订单项（非 dynamic，便于 selectinload 预加载，消除列表页 N+1）
+    order_items = db.relationship('OrderItem', backref='order', lazy='select', cascade='all, delete-orphan')
 
 class OrderItem(db.Model):
     """订单项"""
