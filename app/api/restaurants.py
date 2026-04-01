@@ -4,6 +4,7 @@ from sqlalchemy import or_
 from app.models import Restaurant, Dish, Category, Review
 from app import db, cache
 from app.api import api_bp
+from app.routes.restaurant import restaurant_menu_cache_key
 from app.api.errors import ok, not_found
 
 
@@ -105,7 +106,7 @@ def api_restaurant_detail(restaurant_id):
     ---
     复用与页面路由相同的缓存 key
     """
-    menu_cache_key = f'restaurant_menu:{restaurant_id}'
+    menu_cache_key = restaurant_menu_cache_key(restaurant_id)
     menu_cached = cache.get(menu_cache_key)
 
     if menu_cached is None:

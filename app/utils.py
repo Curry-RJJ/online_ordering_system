@@ -169,6 +169,26 @@ def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return R * 2 * math.asin(math.sqrt(a))
 
 
+def haversine_bbox_half_degrees(user_lat: float, radius_km: float) -> Tuple[float, float]:
+    """
+    以 user_lat 为中心、radius_km 为半径的球面圆，其轴对齐外包矩形在经纬度上的「半宽」。
+    用于先筛掉不可能在圆内的点，再对候选点调用 haversine（性能优化方案 §5.3）。
+    """
+    import math
+    dlat = radius_km / 111.0
+    cos_lat = max(math.cos(math.radians(user_lat)), 0.01)
+    dlng = radius_km / (111.0 * cos_lat)
+    return dlat, dlng
+
+
+def is_outside_haversine_bbox(
+    user_lat: float, user_lng: float, r_lat: float, r_lng: float, radius_km: float
+) -> bool:
+    """若 r 有坐标且肯定落在上述圆的外接矩形之外，则返回 True（可跳过 haversine）。"""
+    dlat, dlng = haversine_bbox_half_degrees(user_lat, radius_km)
+    return abs(r_lat - user_lat) > dlat or abs(r_lng - user_lng) > dlng
+
+
 def amap_ip_locate(ip: str) -> Optional[Tuple[float, float, str]]:
     """
     调高德 IP 定位接口，返回 (lat, lng, city) 或 None。

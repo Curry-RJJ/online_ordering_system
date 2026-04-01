@@ -1,7 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
 from flask_login import login_required, current_user
 from app.models import Restaurant, Dish, Category, Review, CartItem, RestaurantChangeRequest, OrderItem
-from app.utils import save_uploaded_image, delete_image_file, create_image_directories, haversine
+from app.utils import (
+    save_uploaded_image,
+    delete_image_file,
+    create_image_directories,
+    haversine,
+    is_outside_haversine_bbox,
+)
 from app import db, cache
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
@@ -12,6 +18,8 @@ import json
 # ──────────────────────────────────────────────
 
 _LIST_VER_KEY = 'restaurant_list_ver'
+# 菜单聚合缓存版本：单店 bump `menu_ver:{id}`；影响全站菜单语义时 bump `menu_ver_global`（如菜品分类变更）
+_MENU_VER_GLOBAL = 'menu_ver_global'
 
 
 def _to_restaurant_dict(r):
@@ -46,11 +54,28 @@ def _get_list_version():
     return v
 
 
+def restaurant_menu_cache_key(restaurant_id):
+    """详情页与 API 共用的菜单聚合缓存键（版本号参与键名，失效时 bump 而非依赖模糊 delete）。"""
+    local = cache.get(f'menu_ver:{restaurant_id}') or 0
+    glo = cache.get(_MENU_VER_GLOBAL) or 0
+    return f'restaurant_menu:{restaurant_id}:{local}:{glo}'
+
+
+def restaurant_ajax_menu_cache_key(restaurant_id, category_id=None):
+    """分类 AJAX 菜单缓存键（含 category_id 维度）。"""
+    local = cache.get(f'menu_ver:{restaurant_id}') or 0
+    glo = cache.get(_MENU_VER_GLOBAL) or 0
+    cat = category_id if category_id is not None else 'all'
+    return f'restaurant_menu_ajax:{restaurant_id}:{cat}:{local}:{glo}'
+
+
 def _invalidate_restaurant_cache(restaurant_id=None):
-    """清除餐厅相关缓存（详情缓存 + 递增列表版本号）"""
+    """使餐厅菜单/列表相关缓存失效：单店 bump 本地版本；全局 bump 影响所有店菜单语义（如菜品分类 CRUD）。"""
     if restaurant_id:
-        cache.delete(f'restaurant_menu:{restaurant_id}')
-        cache.delete(f'restaurant_menu_ajax:{restaurant_id}')
+        k = f'menu_ver:{restaurant_id}'
+        cache.set(k, (cache.get(k) or 0) + 1, timeout=0)
+    else:
+        cache.set(_MENU_VER_GLOBAL, (cache.get(_MENU_VER_GLOBAL) or 0) + 1, timeout=0)
     v = cache.get(_LIST_VER_KEY) or 0
     cache.set(_LIST_VER_KEY, v + 1, timeout=0)
 
@@ -133,11 +158,15 @@ def list_restaurants():
             avg_rating = round(sum(r.rating for r in rated) / len(rated), 1) if rated else None
 
             if has_location:
-                # 计算距离，过滤 > 10 km
+                # 计算距离，过滤 > 10 km；先矩形边界预筛再 Haversine，减少大列表下的三角运算
                 result = []
                 for r in restaurants_raw:
                     d = _to_restaurant_dict(r)
                     if r.latitude and r.longitude:
+                        if is_outside_haversine_bbox(
+                            user_lat, user_lng, r.latitude, r.longitude, 10.0
+                        ):
+                            continue
                         dist = haversine(user_lat, user_lng, r.latitude, r.longitude)
                         if dist > 10.0:
                             continue        # 超出范围，丢弃
@@ -185,7 +214,7 @@ def list_restaurants():
 @restaurant_bp.route('/<int:restaurant_id>')
 def restaurant_detail(restaurant_id):
     """餐厅详情页面"""
-    menu_cache_key = f'restaurant_menu:{restaurant_id}'
+    menu_cache_key = restaurant_menu_cache_key(restaurant_id)
     menu_cached = cache.get(menu_cache_key)
 
     if menu_cached is None:
@@ -245,7 +274,7 @@ def restaurant_detail(restaurant_id):
 def restaurant_menu(restaurant_id):
     """餐厅菜单页面（AJAX加载）"""
     category_id = request.args.get('category_id', type=int)
-    ajax_cache_key = f'restaurant_menu_ajax:{restaurant_id}:{category_id}'
+    ajax_cache_key = restaurant_ajax_menu_cache_key(restaurant_id, category_id)
     cached = cache.get(ajax_cache_key)
 
     if cached is None:

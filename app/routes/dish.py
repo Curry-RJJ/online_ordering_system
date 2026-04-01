@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Dish, Restaurant, Category, RestaurantChangeRequest, OrderItem
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
 from app import db
+from app.routes.restaurant import _invalidate_restaurant_cache
 from sqlalchemy.orm import joinedload
 import json
 
@@ -101,6 +102,7 @@ def add_dish():
             )
             db.session.add(new_dish)
             db.session.commit()
+            _invalidate_restaurant_cache(restaurant_id)
             flash('菜品添加成功')
             return redirect(url_for('dish.admin_dishes'))
         else:
@@ -214,6 +216,7 @@ def edit_dish(dish_id):
                 setattr(dish, key, value)
 
             db.session.commit()
+            _invalidate_restaurant_cache(dish.restaurant_id)
             flash('菜品修改成功')
             return redirect(url_for('dish.admin_dishes'))
         else:
@@ -273,9 +276,11 @@ def delete_dish(dish_id):
     
     if current_user.role == 'admin':
         # 管理员直接删除
+        rid = dish.restaurant_id
         try:
             db.session.delete(dish)
             db.session.commit()
+            _invalidate_restaurant_cache(rid)
             flash('菜品已删除', 'success')
         except Exception as e:
             db.session.rollback()
@@ -352,6 +357,7 @@ def toggle_available(dish_id):
     if new_status is not None:
         dish.available = new_status
         db.session.commit()
+        _invalidate_restaurant_cache(dish.restaurant_id)
         return jsonify({'success': True, 'message': '状态更新成功'})
     
     return jsonify({'success': False, 'message': '无效的状态'})
@@ -365,6 +371,7 @@ def force_delete_dish(dish_id):
         return redirect(url_for('dish.list_dishes'))
 
     dish = Dish.query.get_or_404(dish_id)
+    rid = dish.restaurant_id
     
     try:
         # 保留历史订单项，仅将 dish_id 置 null
@@ -372,6 +379,7 @@ def force_delete_dish(dish_id):
         # 删除菜品（购物车项通过 cascade 自动删除）
         db.session.delete(dish)
         db.session.commit()
+        _invalidate_restaurant_cache(rid)
         flash('菜品已强制删除，历史订单记录已保留', 'success')
     except Exception as e:
         db.session.rollback()
@@ -397,6 +405,7 @@ def merchant_toggle_available(dish_id):
     
     dish.available = new_status
     db.session.commit()
+    _invalidate_restaurant_cache(dish.restaurant_id)
     
     status_text = '已上架' if new_status else '已下架'
     return jsonify({'success': True, 'message': f'菜品{status_text}'})
