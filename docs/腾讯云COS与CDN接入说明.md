@@ -85,6 +85,50 @@ python scripts/sync_static_images_to_cos.py
 
 脚本会跳过以 `.` 开头的隐藏文件；本地目录默认 `app/static/images/`，可用 `--images-dir` 覆盖。
 
+### 4.2 Windows PowerShell（本机执行脚本）
+
+在项目根目录打开 PowerShell，按需执行（路径按你本机仓库位置修改）：
+
+```powershell
+Set-Location "d:\projects\online_ordering_system"
+python -m pip install -r requirements.txt
+```
+
+仅演练（不需要 COS 密钥）：
+
+```powershell
+Set-Location "d:\projects\online_ordering_system"
+python scripts\sync_static_images_to_cos.py --dry-run
+```
+
+实际上传：先在**当前会话**设置变量（勿把真实密钥提交到 Git；也可把 `COS_*` 写入本地 `.env` 后执行，脚本会尝试加载 `python-dotenv`）：
+
+```powershell
+Set-Location "d:\projects\online_ordering_system"
+
+$env:COS_SECRET_ID = "你的SecretId"
+$env:COS_SECRET_KEY = "你的SecretKey"
+$env:COS_REGION = "ap-hongkong"
+$env:COS_BUCKET = "meituan-1416142652"
+
+python scripts\sync_static_images_to_cos.py
+```
+
+说明：PowerShell 5.x 用分号 `;` 串联命令；若 `python` 不可用可改用 `py -3`。
+
+### 4.3 生产服务器（Docker Compose，`/opt/online_ordering_system`）
+
+`docker-compose.yml` 已将 `COS_*` 从宿主机 `.env` 传入 `web` 容器。在服务器上把 `COS_SECRET_ID`、`COS_SECRET_KEY`、`COS_REGION`、`COS_BUCKET` 写入 **`.env`**（勿提交 Git）后执行：
+
+```bash
+cd /opt/online_ordering_system
+docker compose up -d web
+docker compose exec web python scripts/sync_static_images_to_cos.py --dry-run
+docker compose exec web python scripts/sync_static_images_to_cos.py
+```
+
+容器内工作目录为 `/app`，挂载的 `./app/static/images` 即生产上传目录。
+
 同步完成后，用浏览器直接访问一条：  
 `https://你的CDN域名/static/images/logos/placeholder.png`  
 确认 200 后再打开业务站并设置 `STATIC_CDN_BASE`。
