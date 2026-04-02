@@ -507,9 +507,9 @@
             <div class="restaurant-card-body">
                 <div class="row align-items-center">
                     <div class="col-md-2 text-center mb-3 mb-md-0">
-                        <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                        <img src="{{ (restaurant.logo or '/static/images/logos/placeholder.png')|asset_url }}"
                              class="restaurant-logo" alt="{{ restaurant.name }}"
-                             onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
+                             onerror="this.onerror=null; this.src='{{ ('/static/images/logos/placeholder.png')|asset_url }}';">
                     </div>
                     <div class="col-md-10">
                         <h3 class="restaurant-name">{{ restaurant.name }}</h3>
@@ -630,9 +630,9 @@
                                 <tr>
                                     <td>
                                         {% if dish.image %}
-                                            <img src="{{ dish.image }}" class="dish-image" alt="{{ dish.name }}">
+                                            <img src="{{ dish.image|asset_url }}" class="dish-image" alt="{{ dish.name }}">
                                         {% else %}
-                                            <img src="/static/images/dishes/default.jpg" class="dish-image" alt="默认图片">
+                                            <img src="{{ ('/static/images/dishes/default.jpg')|asset_url }}" class="dish-image" alt="默认图片">
                                         {% endif %}
                                     </td>
                                     <td><span class="dish-name">{{ dish.name }}</span></td>

@@ -76,6 +76,9 @@ def create_app(config_name='default'):
             'pool_recycle': int(os.environ.get('SQLALCHEMY_POOL_RECYCLE', '3600')),
         }
     
+    # 静态资源 CDN 根（腾讯云 COS 绑定 CDN 域名等），无尾斜杠；空则页面/API 仍使用站内相对路径
+    app.config['STATIC_CDN_BASE'] = os.environ.get('STATIC_CDN_BASE', '').strip().rstrip('/')
+
     # 高德地图 API Key 配置
     app.config['AMAP_JS_KEY'] = os.environ.get('AMAP_JS_KEY', '')
     app.config['AMAP_JS_SECURITY_KEY'] = os.environ.get('AMAP_JS_SECURITY_KEY', '')
@@ -191,6 +194,10 @@ def create_app(config_name='default'):
     # 将高德 JS Key 注入所有 Jinja2 模板（Web 服务 Key 不暴露给前端）
     app.jinja_env.globals['amap_js_key'] = app.config['AMAP_JS_KEY']
     app.jinja_env.globals['amap_js_security_key'] = app.config['AMAP_JS_SECURITY_KEY']
+
+    from app.utils import public_asset_url
+    app.jinja_env.filters['asset_url'] = public_asset_url
+    app.jinja_env.globals['asset_url'] = public_asset_url
 
     from app.models import User
     @login_manager.user_loader

@@ -74,10 +74,10 @@
                             {% for item in order.order_items %}
                             <div class="dish-item">
                                 <div class="dish-image-wrapper">
-                                    <img src="{{ item.dish.image or '/static/images/dishes/placeholder.png' }}"
+                                    <img src="{{ (item.dish.image or '/static/images/dishes/placeholder.png')|asset_url }}"
                                          alt="{{ item.dish.name }}"
                                          class="dish-image"
-                                         onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
+                                         onerror="this.onerror=null; this.src='{{ ('/static/images/dishes/placeholder.png')|asset_url }}';">
                                 </div>
                                 <div class="dish-details">
                                     <h6 class="dish-name">{{ item.dish.name }}</h6>

@@ -84,6 +84,9 @@ services:
       AMAP_JS_SECURITY_KEY: ${AMAP_JS_SECURITY_KEY:-}
       AMAP_WEB_KEY: ${AMAP_WEB_KEY:-}
 
+      # 图片等公开静态资源的 CDN 根 URL（腾讯云 COS 绑定 CDN 的域名，无尾斜杠）；不设置则浏览器仍请求本站 /static/...
+      STATIC_CDN_BASE: ${STATIC_CDN_BASE:-}
+
       # 首次空库初始化：管理员账号（须符合 app/password_policy；生产请在 .env 设置 INITIAL_ADMIN_PASSWORD）
       INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}

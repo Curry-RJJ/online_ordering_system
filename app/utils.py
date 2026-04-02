@@ -9,6 +9,37 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import hashlib
 
+
+def public_asset_url(path: Optional[str]) -> str:
+    """
+    将站内资源路径（如 /static/images/...）转为可访问的绝对 URL。
+    若设置环境变量 STATIC_CDN_BASE（或 Flask config 同名）为 CDN/ COS 根域名（无尾斜杠），
+    则拼接为 CDN 地址；否则仍返回原路径（由浏览器向当前站点请求）。
+    已是 http(s) 开头的外链则原样返回。
+    """
+    if path is None:
+        return ''
+    p = str(path).strip()
+    if not p:
+        return ''
+    if p.startswith(('http://', 'https://')):
+        return p
+    if not p.startswith('/'):
+        p = '/' + p
+    base = ''
+    try:
+        from flask import has_app_context, current_app
+        if has_app_context():
+            base = (current_app.config.get('STATIC_CDN_BASE') or '').strip().rstrip('/')
+    except Exception:
+        pass
+    if not base:
+        base = os.environ.get('STATIC_CDN_BASE', '').strip().rstrip('/')
+    if base:
+        return base + p
+    return p
+
+
 def setup_logging(app):
     """
     配置日志系统

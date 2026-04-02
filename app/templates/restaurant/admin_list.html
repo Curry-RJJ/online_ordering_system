@@ -55,9 +55,9 @@
                     <tr>
                         <td>{{ restaurant.id }}</td>
                         <td>
-                            <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                            <img src="{{ (restaurant.logo or '/static/images/logos/placeholder.png')|asset_url }}"
                                  alt="{{ restaurant.name }}" class="restaurant-logo-small"
-                                 onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
+                                 onerror="this.onerror=null; this.src='{{ ('/static/images/logos/placeholder.png')|asset_url }}';">
                         </td>
                         <td>
                             <strong>{{ restaurant.name }}</strong>

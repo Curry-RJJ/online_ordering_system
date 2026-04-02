@@ -11,9 +11,9 @@
                 <div class="col-12">
                     <div class="restaurant-info-card">
                         <div class="restaurant-logo">
-                            <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                            <img src="{{ (restaurant.logo or '/static/images/logos/placeholder.png')|asset_url }}"
                                  alt="{{ restaurant.name }}"
-                                 onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';">
+                                 onerror="this.onerror=null; this.src='{{ ('/static/images/logos/placeholder.png')|asset_url }}';">
                         </div>
                         <div class="restaurant-details">
                             <h1 class="restaurant-name">{{ restaurant.name }}</h1>
@@ -105,9 +105,9 @@
                             {% for dish in recommended_dishes %}
                             <div class="dish-card recommended">
                                 <div class="dish-image">
-                                    <img src="{{ dish.image or '/static/images/dishes/placeholder.png' }}" 
+                                    <img src="{{ (dish.image or '/static/images/dishes/placeholder.png')|asset_url }}" 
                                          alt="{{ dish.name }}"
-                                         onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
+                                         onerror="this.onerror=null; this.src='{{ ('/static/images/dishes/placeholder.png')|asset_url }}';">
                                     {% if dish.is_spicy %}
                                     <span class="spicy-badge">🌶️</span>
                                     {% endif %}
@@ -149,9 +149,9 @@
                             {% for dish in dishes %}
                             <div class="dish-item">
                                 <div class="dish-image">
-                                    <img src="{{ dish.image or '/static/images/dishes/placeholder.png' }}" 
+                                    <img src="{{ (dish.image or '/static/images/dishes/placeholder.png')|asset_url }}" 
                                          alt="{{ dish.name }}"
-                                         onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
+                                         onerror="this.onerror=null; this.src='{{ ('/static/images/dishes/placeholder.png')|asset_url }}';">
                                     {% if dish.is_spicy %}
                                     <span class="spicy-badge">🌶️</span>
                                     {% endif %}

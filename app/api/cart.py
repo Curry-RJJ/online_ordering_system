@@ -6,6 +6,7 @@ from app.api import api_bp
 from app.api.errors import ok, bad_request, not_found
 from app.api.schemas import AddCartItemSchema, UpdateCartItemSchema
 from app import limiter
+from app.utils import public_asset_url
 
 
 def _build_cart_response(user_id: int) -> dict:
@@ -36,7 +37,7 @@ def _build_cart_response(user_id: int) -> dict:
         items.append({
             'dish_id': dish_id,
             'dish_name': dish.name,
-            'dish_image': dish.image,
+            'dish_image': public_asset_url(dish.image) if dish.image else None,
             'price': dish.price,
             'quantity': quantity,
             'item_total': item_total,

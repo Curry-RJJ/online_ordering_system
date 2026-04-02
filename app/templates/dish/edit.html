@@ -100,8 +100,8 @@
                                 <!-- 当前图片预览 -->
                                 {% if dish.image %}
                                 <div class="current-image mb-2">
-                                    <img src="{{ dish.image }}" alt="当前菜品图片" class="img-thumbnail" style="max-height: 150px;"
-                                         onerror="this.src='/static/images/dishes/default.jpg'; this.onerror=null;">
+                                    <img src="{{ dish.image|asset_url }}" alt="当前菜品图片" class="img-thumbnail" style="max-height: 150px;"
+                                         onerror="this.src='{{ ('/static/images/dishes/default.jpg')|asset_url }}'; this.onerror=null;">
                                     <small class="text-muted d-block">当前菜品图片: {{ dish.image }}</small>
                                 </div>
                                 {% endif %}

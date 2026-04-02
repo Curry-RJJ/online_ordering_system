@@ -6,6 +6,7 @@ from flask_jwt_extended import (
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.models import User
 from app import db, limiter
+from app.utils import public_asset_url
 from app.api import api_bp
 from app.api.errors import ok, created, bad_request, unauthorized, not_found
 from app.api.schemas import LoginSchema, RegisterSchema
@@ -18,7 +19,7 @@ def _user_dict(user: User) -> dict:
         'role': user.role,
         'phone': user.phone,
         'email': user.email,
-        'avatar': user.avatar,
+        'avatar': public_asset_url(user.avatar) if user.avatar else None,
     }
 
 

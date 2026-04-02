@@ -66,9 +66,9 @@
                     <tr>
                         <td>{{ dish.id }}</td>
                         <td>
-                            <img src="{{ dish.image or '/static/images/dishes/placeholder.png' }}"
+                            <img src="{{ (dish.image or '/static/images/dishes/placeholder.png')|asset_url }}"
                                  alt="{{ dish.name }}" class="dish-image-small"
-                                 onerror="this.onerror=null; this.src='/static/images/dishes/placeholder.png';">
+                                 onerror="this.onerror=null; this.src='{{ ('/static/images/dishes/placeholder.png')|asset_url }}';">
                         </td>
                         <td>
                             <strong>{{ dish.name }}</strong>

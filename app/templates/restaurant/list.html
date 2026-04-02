@@ -163,10 +163,10 @@
             {% for restaurant in restaurants %}
             <div class="restaurant-card fade-in" data-delay="{{ loop.index0 * 0.1 }}">
                 <div class="restaurant-image-wrapper">
-                    <img src="{{ restaurant.logo or '/static/images/logos/placeholder.png' }}"
+                    <img src="{{ (restaurant.logo or '/static/images/logos/placeholder.png')|asset_url }}"
                          alt="{{ restaurant.name }}"
                          class="restaurant-image"
-                         onerror="this.onerror=null; this.src='/static/images/logos/placeholder.png';"
+                         onerror="this.onerror=null; this.src='{{ ('/static/images/logos/placeholder.png')|asset_url }}';"
                          loading="lazy">
                     
                     <!-- 状态徽章 -->

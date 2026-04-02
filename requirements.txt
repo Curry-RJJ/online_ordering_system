@@ -24,4 +24,6 @@ requests>=2.31.0
 pytest==7.4.3
 pytest-cov==4.1.0
 fakeredis==2.20.0
+# ── 可选：批量同步静态图到腾讯云 COS（scripts/sync_static_images_to_cos.py）──
+cos-python-sdk-v5>=1.9.0,<2
 

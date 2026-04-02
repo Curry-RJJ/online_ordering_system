@@ -12,7 +12,7 @@ alwaysApply: true
 - **Cache/Rate-limit**: Flask-Caching + Flask-Limiter (Redis or memory fallback)；餐厅菜单聚合缓存键含 `menu_ver:{餐厅id}` 与全局 `menu_ver_global`，写操作通过 `_invalidate_restaurant_cache` bump 版本（见 `app/routes/restaurant.py`）
 - **Task queue**: Celery (`celery_worker.py`, tasks in `app/tasks/`)
 - **CSRF**: Flask-WTF (API blueprint exempted)
-- **Deploy**: Docker Compose + Nginx + Gunicorn
+- **Deploy**: Docker Compose + Nginx + Gunicorn；可选 **`STATIC_CDN_BASE`**（无尾斜杠）：腾讯云 COS 绑定 CDN 的根 URL，图片等站内路径经 `public_asset_url` / 模板 `asset_url` 拼接（见 `docs/腾讯云COS与CDN接入说明.md`）；可选依赖 **`cos-python-sdk-v5`** 用于 `scripts/sync_static_images_to_cos.py` 批量上传 `app/static/images` 到 COS
 - **Password policy**: `zxcvbn`（`app/password_policy.py`）；长度 8–128，至少 1 个英文字母与 1 个数字，可含符号/空格；最低 zxcvbn 分数默认 2，环境变量 `PASSWORD_ZXCVBN_MIN_SCORE`（0–4）可覆盖
 
 ## Directory Structure
@@ -23,7 +23,7 @@ app/
 ├── errors.py          # Custom exceptions
 ├── password_policy.py # 注册/改密密钥强度（规则 + zxcvbn）
 ├── bootstrap_admin.py # 首次空库管理员凭据（环境变量 INITIAL_ADMIN_*）
-├── utils.py           # Helpers (image upload, etc.)
+├── utils.py           # Helpers (image upload, haversine + 距离矩形预筛等)
 ├── api/               # REST API blueprint (JWT auth, prefix /api)
 │   ├── auth.py        # /api/auth/*
 │   ├── cart.py        # /api/cart/*
@@ -43,6 +43,7 @@ app/
 ├── templates/         # Jinja2 templates (sub-dirs by feature)
 └── static/            # CSS, images；`static/dist/` 可选放置带内容 hash 的构建产物（Nginx 对 `/static/dist/` 长缓存）
 tests/                 # pytest (fixtures in conftest.py)
+scripts/               # 运维/数据脚本（如 COS 同步、种子数据）
 migrations/            # Flask-Migrate files
 ```
 

@@ -38,7 +38,7 @@
                             {% for item in cart_data['items'] %}
                             <div class="cart-item" data-item-id="{{ item.cart_item.id }}">
                                 <div class="item-image">
-                                    <img src="{{ item.dish.image or '/static/images/dishes/default.jpg' }}" 
+                                    <img src="{{ (item.dish.image or '/static/images/dishes/default.jpg')|asset_url }}" 
                                          alt="{{ item.dish.name }}">
                                 </div>
                                 <div class="item-info">

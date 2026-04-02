@@ -1,3 +1,4 @@
+import copy
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import or_
@@ -6,6 +7,7 @@ from app import db, cache
 from app.api import api_bp
 from app.routes.restaurant import restaurant_menu_cache_key
 from app.api.errors import ok, not_found
+from app.utils import public_asset_url
 
 
 # ──────────────────────────────────────────────
@@ -14,7 +16,9 @@ from app.api.errors import ok, not_found
 
 def _restaurant_dict(r) -> dict:
     return dict(id=r.id, name=r.name, description=r.description,
-                logo=r.logo, banner=r.banner, address=r.address,
+                logo=public_asset_url(r.logo) if r.logo else None,
+                banner=public_asset_url(r.banner) if r.banner else None,
+                address=r.address,
                 phone=r.phone, cuisine_type=r.cuisine_type,
                 business_hours=r.business_hours, delivery_fee=r.delivery_fee,
                 min_order=r.min_order, rating=r.rating,
@@ -24,7 +28,8 @@ def _restaurant_dict(r) -> dict:
 def _dish_dict(d) -> dict:
     return dict(id=d.id, name=d.name, description=d.description,
                 price=d.price, original_price=d.original_price,
-                image=d.image, sales_count=d.sales_count, rating=d.rating,
+                image=public_asset_url(d.image) if d.image else None,
+                sales_count=d.sales_count, rating=d.rating,
                 is_recommended=d.is_recommended, is_spicy=d.is_spicy,
                 available=d.available, category_id=d.category_id)
 
@@ -37,6 +42,28 @@ def _review_dict(r) -> dict:
     return dict(id=r.id, rating=r.rating, content=r.content,
                 created_at=r.created_at.strftime('%Y-%m-%d %H:%M'),
                 username=r.user.username if r.user else '匿名')
+
+
+def _apply_cdn_to_menu_cached(menu: dict) -> dict:
+    """缓存内仍为相对路径；API 响应前为图片字段拼接 STATIC_CDN_BASE。"""
+    out = copy.deepcopy(menu)
+    rest = out.get('restaurant')
+    if isinstance(rest, dict):
+        if rest.get('logo'):
+            rest['logo'] = public_asset_url(rest['logo'])
+        if rest.get('banner'):
+            rest['banner'] = public_asset_url(rest['banner'])
+    for c in out.get('categories') or []:
+        if isinstance(c, dict) and c.get('icon'):
+            c['icon'] = public_asset_url(c['icon'])
+    for d in out.get('recommended_dishes') or []:
+        if isinstance(d, dict) and d.get('image'):
+            d['image'] = public_asset_url(d['image'])
+    for _cat_name, dishes in (out.get('dishes_by_category') or {}).items():
+        for d in dishes:
+            if isinstance(d, dict) and d.get('image'):
+                d['image'] = public_asset_url(d['image'])
+    return out
 
 
 # ──────────────────────────────────────────────
@@ -144,6 +171,6 @@ def api_restaurant_detail(restaurant_id):
                           .order_by(Review.created_at.desc()) \
                           .limit(10).all()
 
-    result = dict(menu_cached)
+    result = _apply_cdn_to_menu_cached(menu_cached)
     result['reviews'] = [_review_dict(r) for r in reviews]
     return ok(result)
