@@ -20,8 +20,10 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 IMAGES_DIR = ROOT / "app" / "static" / "images"
@@ -32,6 +34,27 @@ try:
     load_dotenv(ROOT / ".env")
 except ImportError:
     pass
+
+
+def _normalize_bucket(raw: str) -> str:
+    """去掉首尾空白与成对引号；COS 桶名仅允许字母、数字、连字符 -。"""
+    s = raw.strip()
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        s = s[1:-1].strip()
+    return s
+
+
+def _validate_bucket_name(bucket: str) -> Optional[str]:
+    """返回 None 表示合法，否则返回中文错误说明。"""
+    if not bucket:
+        return "COS_BUCKET 为空"
+    if not re.fullmatch(r"[A-Za-z0-9-]+", bucket):
+        return (
+            "COS_BUCKET 格式非法：只允许字母、数字、英文连字符 -。\n"
+            "  常见错误：误用下划线 _、前后有空格、整行带了引号未去掉、"
+            "写成了 https:// 或域名而不是「桶名称-AppID」。"
+        )
+    return None
 
 
 def _iter_files(base: Path) -> list[Path]:
@@ -77,15 +100,19 @@ def main() -> int:
         print(f"[dry-run] 共 {len(files)} 个文件")
         return 0
 
-    secret_id = os.environ.get("COS_SECRET_ID", "").strip()
-    secret_key = os.environ.get("COS_SECRET_KEY", "").strip()
-    region = os.environ.get("COS_REGION", "").strip()
-    bucket = os.environ.get("COS_BUCKET", "").strip()
+    secret_id = os.environ.get("COS_SECRET_ID", "").strip().strip("\"'")
+    secret_key = os.environ.get("COS_SECRET_KEY", "").strip().strip("\"'")
+    region = os.environ.get("COS_REGION", "").strip().strip("\"'")
+    bucket = _normalize_bucket(os.environ.get("COS_BUCKET", ""))
     if not all([secret_id, secret_key, region, bucket]):
         print(
             "请设置环境变量 COS_SECRET_ID、COS_SECRET_KEY、COS_REGION、COS_BUCKET",
             file=sys.stderr,
         )
+        return 1
+    bucket_err = _validate_bucket_name(bucket)
+    if bucket_err:
+        print(bucket_err, file=sys.stderr)
         return 1
 
     try:
