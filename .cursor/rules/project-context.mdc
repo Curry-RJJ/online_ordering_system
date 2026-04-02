@@ -5,6 +5,7 @@ alwaysApply: true
 
 ## Tech Stack
 - **Backend**: Python 3.9 + Flask 3.x
+- **Local env**: `python-dotenv`（`requirements.txt`）便于本地脚本与 Flask 读取 `.env`
 - **ORM**: Flask-SQLAlchemy (SQLite dev / MySQL prod)；生产环境连接池默认 `pool_size=5`、`max_overflow=5`、`pool_recycle=3600`，可通过 `SQLALCHEMY_POOL_SIZE`、`SQLALCHEMY_MAX_OVERFLOW`、`SQLALCHEMY_POOL_RECYCLE` 覆盖（与 Gunicorn/Celery 进程数对齐，见 `docs/性能优化方案.md`）
 - **Auth**: Flask-Login (Jinja2 pages) + Flask-JWT-Extended (REST API)
 - **Cache/Rate-limit**: Flask-Caching + Flask-Limiter (Redis or memory fallback)；餐厅菜单聚合缓存键含 `menu_ver:{餐厅id}` 与全局 `menu_ver_global`，写操作通过 `_invalidate_restaurant_cache` bump 版本（见 `app/routes/restaurant.py`）

@@ -20,6 +20,7 @@ flask-limiter==3.5.0
 Flask-WTF==1.2.1
 # ── HTTP 客户端（高德 Web Service API）──────────
 requests>=2.31.0
+python-dotenv>=1.0.0
 # ── 测试依赖 ──────────────────────────────────
 pytest==7.4.3
 pytest-cov==4.1.0
