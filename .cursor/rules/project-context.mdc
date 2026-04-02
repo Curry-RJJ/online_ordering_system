@@ -74,7 +74,7 @@ migrations/            # Flask-Migrate files
 - **SSH**: `ssh root@43.155.34.32` (key-based, no password)
 - **服务器代码路径**: `/opt/online_ordering_system`（`docker-compose.yml` 与 `.env` 所在目录）
 - **Deploy guide**: `docs/落地部署清单.md`
-- **Performance**: `docs/性能优化方案.md`（含 **§4～§7 分章节实施标注**、**实施记录总表/明细表**、§11 勾选；每批优化验收后应同步更新该文档）
+- **Performance**: `docs/性能优化方案.md`（含 **§4～§7 分章节实施标注**、**实施记录总表/明细表**、§11 勾选；**§6.2 COS/CDN** 已验收上线；每批优化验收后应同步更新该文档）
 
 ## Notes
 - After model changes: `flask db migrate && flask db upgrade`；性能相关索引见 `migrations/versions/b2c4e6a8d0f1_add_order_list_composite_indexes.py`
