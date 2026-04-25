@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
 from flask_login import login_required, current_user
 from app.models import Restaurant, Dish, Category, Review, CartItem, RestaurantChangeRequest, OrderItem
+from app.cos_presign import validate_cos_web_path
 from app.utils import (
     save_uploaded_image,
     delete_image_file,
@@ -333,27 +334,36 @@ def add_restaurant():
         # 确保图片目录存在
         create_image_directories()
         
-        # 处理Logo上传
+        # 处理 Logo / Banner（浏览器直传 COS 时由 cos_*_path 提交）
         logo_path = ''
-        logo_file = request.files.get('logo')
-        if logo_file and logo_file.filename:
-            new_logo_path = save_uploaded_image(logo_file, 'logos', max_size=(200, 200))
-            if new_logo_path:
-                logo_path = new_logo_path
-                flash(f'Logo上传成功: {new_logo_path}', 'success')
-            else:
-                flash('Logo上传失败，请检查文件格式', 'warning')
-        
-        # 处理Banner上传
+        cos_logo = request.form.get('cos_logo_path', '').strip()
+        if cos_logo and validate_cos_web_path(cos_logo, 'logos'):
+            logo_path = cos_logo
+            flash(f'Logo 已上传: {logo_path}', 'success')
+        else:
+            logo_file = request.files.get('logo')
+            if logo_file and logo_file.filename:
+                new_logo_path = save_uploaded_image(logo_file, 'logos', max_size=(200, 200))
+                if new_logo_path:
+                    logo_path = new_logo_path
+                    flash(f'Logo上传成功: {new_logo_path}', 'success')
+                else:
+                    flash('Logo上传失败，请检查文件格式', 'warning')
+
         banner_path = ''
-        banner_file = request.files.get('banner')
-        if banner_file and banner_file.filename:
-            new_banner_path = save_uploaded_image(banner_file, 'banners', max_size=(800, 300))
-            if new_banner_path:
-                banner_path = new_banner_path
-                flash(f'横幅上传成功: {new_banner_path}', 'success')
-            else:
-                flash('横幅上传失败，请检查文件格式', 'warning')
+        cos_banner = request.form.get('cos_banner_path', '').strip()
+        if cos_banner and validate_cos_web_path(cos_banner, 'banners'):
+            banner_path = cos_banner
+            flash(f'横幅已上传: {banner_path}', 'success')
+        else:
+            banner_file = request.files.get('banner')
+            if banner_file and banner_file.filename:
+                new_banner_path = save_uploaded_image(banner_file, 'banners', max_size=(800, 300))
+                if new_banner_path:
+                    banner_path = new_banner_path
+                    flash(f'横幅上传成功: {new_banner_path}', 'success')
+                else:
+                    flash('横幅上传失败，请检查文件格式', 'warning')
         
         # BUG-12 修复：对数字字段加 try/except，防止非法输入导致 500
         try:
@@ -462,22 +472,30 @@ def edit_restaurant(restaurant_id):
         if _lng is not None:
             change_data['longitude'] = _lng
         
-        # 处理图片上传（商家管理员也需要上传图片）
-        logo_file = request.files.get('logo_file')
-        if logo_file and logo_file.filename:
-            new_logo_path = save_uploaded_image(logo_file, 'logos', max_size=(200, 200))
-            if new_logo_path:
-                change_data['logo'] = new_logo_path
-        elif request.form.get('logo_url'):
-            change_data['logo'] = request.form.get('logo_url', '')
-        
-        banner_file = request.files.get('banner_file')
-        if banner_file and banner_file.filename:
-            new_banner_path = save_uploaded_image(banner_file, 'banners', max_size=(800, 300))
-            if new_banner_path:
-                change_data['banner'] = new_banner_path
-        elif request.form.get('banner_url'):
-            change_data['banner'] = request.form.get('banner_url', '')
+        # 处理图片上传（浏览器直传 COS 时由 cos_*_path 提交）
+        cos_logo = request.form.get('cos_logo_path', '').strip()
+        if cos_logo and validate_cos_web_path(cos_logo, 'logos'):
+            change_data['logo'] = cos_logo
+        else:
+            logo_file = request.files.get('logo_file')
+            if logo_file and logo_file.filename:
+                new_logo_path = save_uploaded_image(logo_file, 'logos', max_size=(200, 200))
+                if new_logo_path:
+                    change_data['logo'] = new_logo_path
+            elif request.form.get('logo_url'):
+                change_data['logo'] = request.form.get('logo_url', '')
+
+        cos_banner = request.form.get('cos_banner_path', '').strip()
+        if cos_banner and validate_cos_web_path(cos_banner, 'banners'):
+            change_data['banner'] = cos_banner
+        else:
+            banner_file = request.files.get('banner_file')
+            if banner_file and banner_file.filename:
+                new_banner_path = save_uploaded_image(banner_file, 'banners', max_size=(800, 300))
+                if new_banner_path:
+                    change_data['banner'] = new_banner_path
+            elif request.form.get('banner_url'):
+                change_data['banner'] = request.form.get('banner_url', '')
         
         if current_user.role == 'admin':
             # 管理员直接修改

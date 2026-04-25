@@ -11,7 +11,7 @@ alwaysApply: true
 - **Cache/Rate-limit**: Flask-Caching + Flask-Limiter (Redis or memory fallback)；餐厅菜单聚合缓存键含 `menu_ver:{餐厅id}` 与全局 `menu_ver_global`，写操作通过 `_invalidate_restaurant_cache` bump 版本（见 `app/routes/restaurant.py`）
 - **Task queue**: Celery (`celery_worker.py`, tasks in `app/tasks/`)
 - **CSRF**: Flask-WTF (API blueprint exempted)
-- **Deploy**: Docker Compose + Nginx + Gunicorn；可选 **`STATIC_CDN_BASE`**（无尾斜杠）：腾讯云 COS 绑定 CDN 的根 URL，图片等站内路径经 `public_asset_url` / 模板 `asset_url` 拼接（见 `docs/腾讯云COS与CDN接入说明.md`）；`docker-compose.yml` 的 `web` 将 **`STATIC_CDN_BASE`** 与可选 **`COS_*`**（`COS_SECRET_ID` 等）从宿主机 `.env` 传入容器，便于 **`docker compose exec web python scripts/sync_static_images_to_cos.py`**；`.env.example` 含对应占位；可选依赖 **`cos-python-sdk-v5`** 用于同步脚本
+- **Deploy**: Docker Compose + Nginx + Gunicorn；可选 **`STATIC_CDN_BASE`**（无尾斜杠）：腾讯云 COS 绑定 CDN 的根 URL，图片等站内路径经 `public_asset_url` / 模板 `asset_url` 拼接（见 `docs/腾讯云COS与CDN接入说明.md`）；`docker-compose.yml` 的 `web` 将 **`STATIC_CDN_BASE`**、可选 **`COS_*`**（`COS_SECRET_ID` 等）、可选 **`COS_BROWSER_UPLOAD`** 从宿主机 `.env` 传入容器；**`COS_BROWSER_UPLOAD=1`** 且 COS/CDN 齐全时启用**浏览器直传**（`app/cos_presign.py` 预签名 PUT，`POST /upload/cos-presign`）；否则仍可用 **`docker compose exec web python scripts/sync_static_images_to_cos.py`** 批量同步；`.env.example` 含对应占位；可选依赖 **`cos-python-sdk-v5`** 用于预签名与同步脚本
 - **Password policy**: `zxcvbn`（`app/password_policy.py`）；长度 8–128，至少 1 个英文字母与 1 个数字，可含符号/空格；最低 zxcvbn 分数默认 2，环境变量 `PASSWORD_ZXCVBN_MIN_SCORE`（0–4）可覆盖
 
 ## Directory Structure
@@ -23,6 +23,7 @@ app/
 ├── password_policy.py # 注册/改密密钥强度（规则 + zxcvbn）
 ├── bootstrap_admin.py # 首次空库管理员凭据（环境变量 INITIAL_ADMIN_*）
 ├── utils.py           # Helpers (image upload, haversine + 距离矩形预筛等)
+├── cos_presign.py     # COS 浏览器直传：预签名 PUT、路径校验（需 COS_BROWSER_UPLOAD + STATIC_CDN_BASE + COS_*）
 ├── api/               # REST API blueprint (JWT auth, prefix /api)
 │   ├── auth.py        # /api/auth/*
 │   ├── cart.py        # /api/cart/*
@@ -36,11 +37,12 @@ app/
 │   ├── dish.py        # /dish/*
 │   ├── order.py       # /order/*
 │   ├── restaurant.py  # /restaurant/*
+│   ├── upload.py      # /upload/cos-presign（登录用户，COS 预签名 PUT）
 │   └── restaurant_category.py
 ├── services/cart_service.py  # Cart business logic
 ├── tasks/order_tasks.py      # Celery async tasks
 ├── templates/         # Jinja2 templates (sub-dirs by feature)
-└── static/            # CSS, images；`static/dist/` 可选放置带内容 hash 的构建产物（Nginx 对 `/static/dist/` 长缓存）
+└── static/            # CSS, images；`js/cos_browser_upload.js`（COS 直传）；`static/dist/` 可选带 hash 构建产物（Nginx 长缓存）
 tests/                 # pytest (fixtures in conftest.py)
 scripts/               # 运维/数据脚本（如 COS 同步、种子数据）
 migrations/            # Flask-Migrate files
@@ -63,9 +65,9 @@ migrations/            # Flask-Migrate files
 ## Conventions
 - **API response**: `{'code': 200, 'message': '...', 'data': {...}}`
 - **Rate limit**: global 200 req/min/IP; stricter on sensitive endpoints (login, etc.)
-- **Image upload**: saved to `app/static/images/{dishes|logos|banners}/`, return relative path
+- **Image upload**: 默认保存到 `app/static/images/{dishes|logos|banners}/` 并返回相对路径；若 **`COS_BROWSER_UPLOAD`** 启用且前端带合法 **`cos_*_path`**，则服务端只校验路径并入库，文件已由浏览器 PUT 至 COS
 - **Roles**: `user` / `merchant` (restaurant admin) / `admin` (superadmin)
-- **Blueprint prefix**: Jinja2 pages — none; REST API — `/api`
+- **Blueprint prefix**: Jinja2 pages — none; REST API — `/api/v1`
 - **Password (register / change)**: 服务端 `validate_password()`；登录不重新校验 zxcvbn
 - **Bootstrap admin**: 首次空库由 `entrypoint`/`init_data` 使用 `get_initial_admin_credentials()`；生产须设置 `INITIAL_ADMIN_PASSWORD`；演示用户 `testuser` 仅 `SEED_DEMO_USERS=1` 或 `FLASK_ENV=development`
 
@@ -80,3 +82,4 @@ migrations/            # Flask-Migrate files
 - After model changes: `flask db migrate && flask db upgrade`；性能相关索引见 `migrations/versions/b2c4e6a8d0f1_add_order_list_composite_indexes.py`
 - New API routes: register blueprint in `app/api/__init__.py`
 - Tests: `pytest` in `tests/`
+- Interview prep (how to present the project): `docs/面试-项目讲述指南.md`

@@ -145,6 +145,7 @@ def create_app(config_name='default'):
     from app.routes.restaurant_category import restaurant_category_bp
     from app.routes.category import category_bp
     from app.routes.location import location_bp
+    from app.routes.upload import upload_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dish_bp)
@@ -154,6 +155,7 @@ def create_app(config_name='default'):
     app.register_blueprint(restaurant_category_bp)
     app.register_blueprint(category_bp)
     app.register_blueprint(location_bp)
+    app.register_blueprint(upload_bp)
 
     # 注册 RESTful API 蓝图（JWT 鉴权，排除 CSRF 检查）
     from app.api import api_bp
@@ -198,6 +200,12 @@ def create_app(config_name='default'):
     from app.utils import public_asset_url
     app.jinja_env.filters['asset_url'] = public_asset_url
     app.jinja_env.globals['asset_url'] = public_asset_url
+
+    @app.context_processor
+    def _inject_cos_browser_upload():
+        from app.cos_presign import cos_browser_upload_enabled
+
+        return {'cos_browser_upload_enabled': cos_browser_upload_enabled()}
 
     from app.models import User
     @login_manager.user_loader

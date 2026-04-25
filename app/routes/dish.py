@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models import Dish, Restaurant, Category, RestaurantChangeRequest, OrderItem
+from app.cos_presign import validate_cos_web_path
 from app.utils import save_uploaded_image, delete_image_file, create_image_directories
 from app import db
 from app.routes.restaurant import _invalidate_restaurant_cache
@@ -64,18 +65,22 @@ def add_dish():
         except (ValueError, TypeError):
             sales_count = 0
         
-        # 处理菜品图片上传
+        # 处理菜品图片上传（浏览器直传 COS 时由隐藏域 cos_image_path 提交）
         image = ''
-        image_file = request.files.get('image_file')
-        if image_file and image_file.filename:
-            create_image_directories()
-            new_image_path = save_uploaded_image(image_file, 'dishes', max_size=(600, 400))
-            if new_image_path:
-                image = new_image_path
-            else:
-                flash('菜品图片上传失败，请检查文件格式')
-        elif request.form.get('image_url'):
-            image = request.form.get('image_url', '')
+        cos_path = request.form.get('cos_image_path', '').strip()
+        if cos_path and validate_cos_web_path(cos_path, 'dishes'):
+            image = cos_path
+        else:
+            image_file = request.files.get('image_file')
+            if image_file and image_file.filename:
+                create_image_directories()
+                new_image_path = save_uploaded_image(image_file, 'dishes', max_size=(600, 400))
+                if new_image_path:
+                    image = new_image_path
+                else:
+                    flash('菜品图片上传失败，请检查文件格式')
+            elif request.form.get('image_url'):
+                image = request.form.get('image_url', '')
         
         # 状态设置
         available = request.form.get('available') == 'on'
@@ -195,14 +200,18 @@ def edit_dish(dish_id):
             'is_spicy': request.form.get('is_spicy') == 'on'
         }
         
-        # 处理图片上传（商家管理员也需要上传图片）
-        image_file = request.files.get('image_file')
-        if image_file and image_file.filename:
-            new_image_path = save_uploaded_image(image_file, 'dishes', max_size=(600, 400))
-            if new_image_path:
-                change_data['image'] = new_image_path
-        elif request.form.get('image_url'):
-            change_data['image'] = request.form.get('image_url', '')
+        # 处理图片上传（浏览器直传 COS 时由隐藏域 cos_image_path 提交）
+        cos_path = request.form.get('cos_image_path', '').strip()
+        if cos_path and validate_cos_web_path(cos_path, 'dishes'):
+            change_data['image'] = cos_path
+        else:
+            image_file = request.files.get('image_file')
+            if image_file and image_file.filename:
+                new_image_path = save_uploaded_image(image_file, 'dishes', max_size=(600, 400))
+                if new_image_path:
+                    change_data['image'] = new_image_path
+            elif request.form.get('image_url'):
+                change_data['image'] = request.form.get('image_url', '')
         
         if current_user.role == 'admin':
             # 管理员直接修改

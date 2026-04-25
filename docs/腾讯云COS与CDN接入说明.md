@@ -8,7 +8,23 @@
 
 - 浏览器请求的图片来源为：`https://你的CDN域名/static/images/...`（与仓库内相对路径一致）。
 - 数据库仍保存 **`/static/images/...`**，不存完整域名，便于换 CDN 域名。
-- **上传**：当前仍写入服务器 `./app/static/images/`（Docker 挂载卷）；你需**定期或一次性**将文件同步到 COS，使 CDN 可回源到 COS。
+- **上传**：可二选一——仍写入服务器 `./app/static/images/`（Docker 挂载卷）并定期同步到 COS；或启用 **浏览器直传 COS**（见下文 §1.1），新图直接进桶，无需经应用服务器落盘。
+
+### 1.1 浏览器直传 COS（预签名 PUT）
+
+当环境变量 **`COS_BROWSER_UPLOAD=1`**（或 `true`/`yes`），且已配置 **`STATIC_CDN_BASE`** 与 **`COS_SECRET_ID` / `COS_SECRET_KEY` / `COS_REGION` / `COS_BUCKET`** 时，管理端「新增/编辑菜品、餐厅」会在提交前向 `POST /upload/cos-presign` 申请预签名 URL，浏览器 **`PUT`** 文件到 COS，再将站内路径写入表单。
+
+**必须在 COS 存储桶「跨域访问 CORS」中配置**，否则浏览器跨域 `PUT` 会被拒绝。示例规则（按你的站点域名与需求调整）：
+
+| 配置项 | 建议值 |
+|--------|--------|
+| 来源 Origin | `https://你的业务域名`（开发可再加 `http://127.0.0.1:5000`） |
+| 操作 Methods | `PUT`、`HEAD`、`GET`（按需） |
+| Allow-Headers | `Content-Type`、`x-cos-*`（若 SDK 需要） |
+| Expose-Headers | `ETag`（可选） |
+| 超时 Max-Age | `600` 或更长 |
+
+保存 CORS 后，在浏览器开发者工具 Network 中确认预签名 `PUT` 返回 200，且页面展示的图片来源为 `STATIC_CDN_BASE` + `/static/images/...`。
 
 ---
 

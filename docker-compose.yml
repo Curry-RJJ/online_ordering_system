@@ -92,6 +92,8 @@ services:
       COS_SECRET_KEY: ${COS_SECRET_KEY:-}
       COS_REGION: ${COS_REGION:-}
       COS_BUCKET: ${COS_BUCKET:-}
+      # 浏览器直传 COS（预签名 PUT）：1/true/yes 且需 STATIC_CDN_BASE + COS_* 齐全
+      COS_BROWSER_UPLOAD: ${COS_BROWSER_UPLOAD:-}
 
       # 首次空库初始化：管理员账号（须符合 app/password_policy；生产请在 .env 设置 INITIAL_ADMIN_PASSWORD）
       INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}

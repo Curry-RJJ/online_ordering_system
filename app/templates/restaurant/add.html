@@ -13,8 +13,11 @@
                     </h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('restaurant.add_restaurant') }}" enctype="multipart/form-data">
+                    <form id="form-restaurant-add" method="POST" action="{{ url_for('restaurant.add_restaurant') }}" enctype="multipart/form-data"
+                          {% if cos_browser_upload_enabled %}data-cos-browser-upload="1" data-require-map="1"{% endif %}>
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="cos_logo_path" id="cos_logo_path" value="">
+                        <input type="hidden" name="cos_banner_path" id="cos_banner_path" value="">
                         <!-- 基本信息 -->
                         <h5 class="mb-3">基本信息</h5>
                         <div class="row">
@@ -236,7 +239,7 @@ h5 { color: #333; border-bottom: 2px solid #ffd900; padding-bottom: 8px; }
         if (!addrInput.value && pendingAddr) addrInput.value = pendingAddr;
         bootstrap.Modal.getOrCreateInstance(modal).hide();
     });
-    document.querySelector('form').addEventListener('submit', function (e) {
+    document.getElementById('form-restaurant-add').addEventListener('submit', function (e) {
         if (!document.getElementById('latitude').value) {
             e.preventDefault();
             document.getElementById('add-modal-addr-display').innerHTML =
@@ -246,4 +249,15 @@ h5 { color: #333; border-bottom: 2px solid #ffd900; padding-bottom: 8px; }
     });
 })();
 </script>
+{% if cos_browser_upload_enabled %}
+<script src="{{ url_for('static', filename='js/cos_browser_upload.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  attachCosBrowserUpload('#form-restaurant-add', [
+    { fileInputId: 'logo', uploadType: 'logos', hiddenName: 'cos_logo_path' },
+    { fileInputId: 'banner', uploadType: 'banners', hiddenName: 'cos_banner_path' }
+  ]);
+});
+</script>
+{% endif %}
 {% endblock %}
